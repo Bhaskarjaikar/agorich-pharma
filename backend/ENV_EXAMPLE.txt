@@ -1,0 +1,34 @@
+# Copy this file to .env and update with your values
+
+# Database Configuration
+# Use existing PostgreSQL or create new database
+DB_USERNAME=postgres
+DB_PASSWORD=your_password_here
+DB_HOST=localhost
+DB_PORT=5432
+DB_DATABASE=medusa_agorich
+
+# Redis Configuration (optional - for caching and events)
+# If you don't have Redis, you can skip this - MedusaJS will work without it
+REDIS_URL=redis://localhost:6379
+
+# Backend URLs
+BACKEND_URL=http://localhost:9000
+ADMIN_URL=http://localhost:7001
+STORE_CORS=http://localhost:3000
+ADMIN_CORS=http://localhost:7001,http://localhost:3000
+
+# JWT Secret (generate a secure random string)
+JWT_SECRET=supersecret_change_in_production
+COOKIE_SECRET=supersecret_change_in_production
+
+# Admin User (first time setup)
+ADMIN_EMAIL=admin@agorich.com
+ADMIN_PASSWORD=admin123
+
+# Razorpay Payment Configuration (optional - for production)
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+RAZORPAY_ACCOUNT_ID=your_razorpay_account_id
+RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+

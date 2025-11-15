@@ -1,0 +1,7 @@
+name,stock,mrp,agorich_price,pack_size,batch_number,expiry_date,mfg
+Paracetamol 500mg,100,50,30,10 tablets,BATCH001,2025-12,Cipla
+Amoxicillin 250mg,50,120,72,10 capsules,BATCH002,2026-06,Sun Pharma
+Cetirizine 10mg,200,25,15,10 tablets,BATCH003,2025-09,Dr Reddys
+Omeprazole 20mg,75,80,48,10 capsules,BATCH004,2026-03,Lupin
+Azithromycin 500mg,40,180,108,3 tablets,BATCH005,2025-11,Abbott
+
