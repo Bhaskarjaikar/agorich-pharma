@@ -18,6 +18,45 @@ const nextConfig: NextConfig = {
     // This does NOT fix the underlying issues; it only prevents build failures.
     ignoreDuringBuilds: true,
   },
+  async redirects() {
+    return [
+      {
+        source: "/shop",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/about-us",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/contact-us",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/categories",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/product/:slug*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/author/:slug*",
+        destination: "/",
+        permanent: true,
+      },
+      {
+        source: "/uncategorized/:slug*",
+        destination: "/",
+        permanent: true,
+      },
+    ];
+  },
   turbopack: {
     // Explicitly set the workspace root to avoid multi-lockfile warnings.
     root: process.cwd(),
