@@ -13,11 +13,6 @@ const nextConfig: NextConfig = {
       "framer-motion",
     ],
   },
-  eslint: {
-    // Allow production builds to succeed even if there are ESLint errors.
-    // This does NOT fix the underlying issues; it only prevents build failures.
-    ignoreDuringBuilds: true,
-  },
   async redirects() {
     return [
       {
