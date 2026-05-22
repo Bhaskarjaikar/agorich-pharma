@@ -30,14 +30,10 @@ export async function initFirebase(): Promise<{ app: FirebaseApp; messaging: Mes
   }
 
   if (!serviceWorkerRegistration) {
-    serviceWorkerRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js')
+    serviceWorkerRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js') ?? null
   }
 
-  if (!messaging && serviceWorkerRegistration) {
-    messaging = getMessaging(app, {
-      registration: serviceWorkerRegistration,
-    })
-  } else if (!messaging) {
+  if (!messaging) {
     messaging = getMessaging(app)
   }
 

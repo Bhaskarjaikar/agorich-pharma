@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { onMessage, getMessaging, getToken, isSupported } from 'firebase/messaging'
+import { onMessage, getMessaging, getToken, isSupported as isMessagingSupported } from 'firebase/messaging'
 import { initFirebase } from '@/lib/firebase'
 import { useAuth } from '@/components/auth/AuthContext'
 
@@ -15,7 +15,7 @@ export function useFCM() {
   useEffect(() => {
     const checkSupport = async () => {
       try {
-        const supported = await isSupported()
+        const supported = await isMessagingSupported()
         setIsSupported(supported)
       } catch {
         setIsSupported(false)

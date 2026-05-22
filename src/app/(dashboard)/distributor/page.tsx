@@ -59,14 +59,6 @@ interface RecentOrder {
   margin: number
 }
 
-interface NotificationItem {
-  id: string
-  type: string
-  message: string
-  time: string
-  unread: boolean
-}
-
 export default function DistributorDashboard() {
   const { t } = useTranslation()
   const router = useRouter()
@@ -1234,18 +1226,18 @@ export default function DistributorDashboard() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * index }}
                       className={`p-4 rounded-2xl border ${
-                        notification.unread 
+                        !notification.is_read 
                           ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30'
                           : 'bg-muted border'
                       }`}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`w-2 h-2 rounded-full mt-2 ${
-                          notification.unread ? 'bg-amber-500' : 'bg-muted-foreground/50'
+                          !notification.is_read ? 'bg-amber-500' : 'bg-muted-foreground/50'
                         }`} />
                         <div className="flex-1">
                           <p className="text-sm text-foreground">{notification.message}</p>
-                          <p className="text-xs mt-1 text-muted-foreground">{notification.time}</p>
+                          <p className="text-xs mt-1 text-muted-foreground">{notification.created_at}</p>
                         </div>
                       </div>
                     </motion.div>

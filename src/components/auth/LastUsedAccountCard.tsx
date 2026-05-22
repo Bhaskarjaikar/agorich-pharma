@@ -87,7 +87,7 @@ export function LastUsedAccountCard({
   onSwitchAccount,
   onSignOut,
   isLoading = false,
-}: LastUsedAccountProps) {
+}: LastUsedAccountCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
