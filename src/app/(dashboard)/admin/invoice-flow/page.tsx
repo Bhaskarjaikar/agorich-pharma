@@ -342,14 +342,13 @@ export default function InvoiceFlowDashboard() {
       // Always clear loading data - we've loaded something (even if empty)
       setIsLoadingData(false)
     }
-  }, [loading, user, isAdmin, refreshDraftCount, router])
+  }, [loading, user, isAdmin, router])
 
   useEffect(() => {
     if (loading) return
     if (!user) return
     if (!isAdmin) return
 
-    refreshDraftCount()
     loadInvoices(false)
 
     const interval = setInterval(() => {
@@ -359,7 +358,7 @@ export default function InvoiceFlowDashboard() {
     return () => {
       clearInterval(interval)
     }
-  }, [loading, user, isAdmin, refreshDraftCount, loadInvoices])
+  }, [loading, user, isAdmin, loadInvoices])
 
   // Handle customer WhatsApp (opens customer's WhatsApp)
   const handleCustomerWhatsApp = (invoice: AdminInvoice) => {

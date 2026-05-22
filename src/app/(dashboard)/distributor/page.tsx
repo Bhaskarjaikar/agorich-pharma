@@ -383,88 +383,17 @@ export default function DistributorDashboard() {
           table: 'invoices',
           filter: `user_id=eq.${userId}`
         },
-        (payload) => {
-          const newInvoice = payload.new as DashboardInvoice
-          const oldInvoice = payload.old as DashboardInvoice
-          
+        () => {
           // Refresh KPI data whenever invoices change
           loadKPIData()
-          
-          // Only create notification if status changed
-          if (newInvoice && oldInvoice && newInvoice.status !== oldInvoice.status) {
-            let message = ''
-            let type: NotificationItem['type'] = 'order'
-            
-            switch (newInvoice.status) {
-              case 'CONFIRMED':
-                message = `Order ${newInvoice.invoice_number} has been confirmed!`
-                type = 'success'
-                break
-              case 'PACKED':
-                message = `Order ${newInvoice.invoice_number} has been packed and is ready for dispatch`
-                type = 'order'
-                break
-              case 'DISPATCHED':
-                message = `Order ${newInvoice.invoice_number} has been dispatched`
-                type = 'order'
-                break
-              case 'DELIVERED':
-                message = `Order ${newInvoice.invoice_number} has been delivered!`
-                type = 'success'
-                break
-              case 'PAID':
-                message = `Payment received for ${newInvoice.invoice_number}: ₹${newInvoice.grand_total}`
-                type = 'payment'
-                break
-              case 'CANCELLED':
-                message = `Order ${newInvoice.invoice_number} has been cancelled`
-                type = 'payment'
-                break
-              default:
-                message = `Order ${newInvoice.invoice_number} status updated to ${newInvoice.status}`
-            }
-            
-            const newNotification: NotificationItem = {
-              id: `status-${newInvoice.id}-${Date.now()}`,
-              type,
-              message,
-              time: 'Just now',
-              unread: true
-            }
-            
-            // Add to notifications and save to localStorage
-            setNotifications(prev => {
-              const updated = [newNotification, ...prev].slice(0, 10)
-              // Persist to localStorage
-              try {
-                localStorage.setItem('distributor_notifications', JSON.stringify(updated))
-              } catch {}
-              return updated
-            })
-            
-            setUnreadCount(prev => prev + 1)
-            
-            // Show browser notification if permitted
-            if (Notification.permission === 'granted') {
-              new Notification('Agorich Pharma', {
-                body: message,
-                icon: '/favicon.ico'
-              })
-            }
-          }
         }
       )
       .subscribe()
 
-    // Request notification permission on first load
-    if (typeof window !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
-
     return () => {
       subscription.unsubscribe()
     }
-  }, [userId])
+  }, [userId, loadKPIData])
 
   // Authentication removed - page is publicly accessible
   // No auth checks needed
