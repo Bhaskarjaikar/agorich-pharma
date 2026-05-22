@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  DISTRIBUTOR
+  RETAILER
+  DELIVERY_PARTNER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  PACKED
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PARTIAL
+  PAID
+}
+
+enum InvoiceStatus {
+  DRAFT
+  GENERATED
+  SENT
+  PAID
+}
+
+model User {
+  id               String   @id @default(uuid())
+  email            String   @unique
+  password         String
+  role             UserRole
+  status           UserStatus @default(ACTIVE)
+  name             String
+  mobile           String   @unique
+  gstNumber        String?
+  dlNumber         String?
+  address          String?
+  territory        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  refreshTokens    RefreshToken[]
+  ordersAsRetailer Order[]       @relation("RetailerOrders")
+  ordersAsDistributor Order[]    @relation("DistributorOrders")
+  inventoryBatches InventoryBatch[]
+  invoicesAsRetailer Invoice[]   @relation("RetailerInvoices")
+  invoicesAsDistributor Invoice[] @relation("DistributorInvoices")
+  
+  @@index([role])
+  @@index([status])
+  @@index([territory])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  name            String
+  brand           String?
+  saltComposition String?
+  dosage          String?
+  category        String?
+  gstRate         Decimal  @default(0)
+  mrp             Decimal
+  ptr             Decimal?
+  pts             Decimal?
+  packSize        String?
+  manufacturer    String?
+  status          String   @default("ACTIVE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  orderItems      OrderItem[]
+  inventoryBatches InventoryBatch[]
+  invoiceItems    InvoiceItem[]
+  
+  @@index([name])
+  @@index([category])
+  @@index([status])
+}
+
+model InventoryBatch {
+  id            String   @id @default(uuid())
+  productId     String
+  distributorId String
+  batchNumber   String
+  expiryDate    DateTime
+  availableQty  Int      @default(0)
+  reservedQty   Int      @default(0)
+  damagedQty    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  distributor   User     @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+  orderItems    OrderItem[]
+  
+  @@index([productId])
+  @@index([distributorId])
+  @@index([expiryDate])
+  @@index([batchNumber])
+  @@index([distributorId, expiryDate])
+  @@index([distributorId, productId])
+  @@unique([distributorId, productId, batchNumber])
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  orderNumber   String      @unique
+  retailerId    String
+  distributorId String
+  status        OrderStatus @default(PENDING)
+  totalAmount   Decimal     @default(0)
+  subtotal      Decimal     @default(0)
+  taxAmount     Decimal     @default(0)
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  retailer      User        @relation("RetailerOrders", fields: [retailerId], references: [id], onDelete: Cascade)
+  distributor   User        @relation("DistributorOrders", fields: [distributorId], references: [id], onDelete: Cascade)
+  items         OrderItem[]
+  invoices      Invoice[]
+  
+  @@index([retailerId])
+  @@index([distributorId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([distributorId, createdAt])
+  @@index([distributorId, status])
+  @@index([retailerId, createdAt])
+}
+
+model OrderItem {
+  id               String         @id @default(uuid())
+  orderId          String
+  productId        String
+  inventoryBatchId String?
+  quantity         Int
+  mrp              Decimal
+  ptr              Decimal?
+  pts              Decimal?
+  gstRate          Decimal
+  total            Decimal
+  createdAt        DateTime       @default(now())
+  
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventoryBatch   InventoryBatch? @relation(fields: [inventoryBatchId], references: [id])
+  
+  @@index([orderId])
+  @@index([productId])
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  orderId       String?
+  retailerId    String
+  distributorId String
+  status        InvoiceStatus @default(GENERATED)
+  paymentStatus PaymentStatus @default(UNPAID)
+  subtotal      Decimal       @default(0)
+  taxAmount     Decimal       @default(0)
+  totalAmount   Decimal       @default(0)
+  paidAmount    Decimal       @default(0)
+  dueDate       DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  order         Order?        @relation(fields: [orderId], references: [id])
+  retailer      User          @relation("RetailerInvoices", fields: [retailerId], references: [id], onDelete: Cascade)
+  distributor   User          @relation("DistributorInvoices", fields: [distributorId], references: [id], onDelete: Cascade)
+  items         InvoiceItem[]
+  
+  @@index([orderId])
+  @@index([retailerId])
+  @@index([distributorId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([retailerId, paymentStatus])
+  @@index([distributorId, paymentStatus])
+}
+
+model InvoiceItem {
+  id        String   @id @default(uuid())
+  invoiceId String
+  productId String
+  quantity  Int
+  mrp       Decimal
+  ptr       Decimal?
+  pts       Decimal?
+  gstRate   Decimal
+  subtotal  Decimal
+  taxAmount Decimal
+  total     Decimal
+  
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+  @@index([productId])
+}

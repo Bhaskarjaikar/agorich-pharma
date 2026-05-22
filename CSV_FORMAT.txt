@@ -1,0 +1,109 @@
+================================================================================
+          CSV IMPORT FORMAT FOR AGORICH PHARMA INVENTORY
+================================================================================
+
+EXACT FORMAT REQUIRED:
+----------------------
+
+First Row (Headers) - EXACTLY as shown (case doesn't matter):
+name,stock,mrp,agorich_price,pack_size,batch_number,expiry_date,mfg
+
+Data Rows - Example:
+Paracetamol 500mg,100,50,30,10 tablets,BATCH001,2025-12,Cipla
+Amoxicillin 250mg,50,120,72,10 capsules,BATCH002,2026-06,Sun Pharma
+
+
+REQUIRED COLUMNS (Must be present):
+-----------------------------------
+1. name          - Product name (text, cannot be empty)
+2. stock          - Stock quantity (number, must be >= 0)
+3. mrp            - Maximum Retail Price in ₹ (number, must be > 0)
+4. agorich_price  - Agorich selling price in ₹ (number, must be > 0 and < mrp)
+
+
+OPTIONAL COLUMNS (Can be empty):
+---------------------------------
+5. pack_size      - Package size (text, e.g., "10 tablets", "100ml")
+6. batch_number   - Batch/Lot number (text)
+7. expiry_date    - Expiry date (format: YYYY-MM, MM-YYYY, or DD-MM-YYYY)
+8. mfg            - Manufacturer name (text)
+
+
+VALIDATION RULES:
+-----------------
+✓ Product name cannot be empty
+✓ Stock must be a valid number >= 0
+✓ MRP must be a valid number > 0
+✓ Agorich Price must be a valid number > 0
+✓ Agorich Price must be less than MRP (otherwise no profit margin)
+✓ All prices should be numbers only (no ₹ symbol, no commas)
+
+
+EXAMPLE CSV FILE:
+-----------------
+name,stock,mrp,agorich_price,pack_size,batch_number,expiry_date,mfg
+Paracetamol 500mg,100,50,30,10 tablets,BATCH001,2025-12,Cipla
+Amoxicillin 250mg,50,120,72,10 capsules,BATCH002,2026-06,Sun Pharma
+Cetirizine 10mg,200,25,15,10 tablets,BATCH003,2025-09,Dr Reddys
+Omeprazole 20mg,75,80,48,10 capsules,BATCH004,2026-03,Lupin
+
+
+IMPORTANT NOTES:
+---------------
+• Use comma (,) as separator - NOT semicolon (;)
+• First row MUST be headers
+• Do NOT use quotes around fields unless needed for commas inside text
+• Do NOT include currency symbols (₹) in price fields
+• Date format: YYYY-MM (2025-12) or MM-YYYY (12-2025) or DD-MM-YYYY
+• If a field is empty, leave it blank but keep the comma
+
+
+COMMON MISTAKES TO AVOID:
+-------------------------
+❌ Missing headers in first row
+❌ Using semicolon (;) instead of comma (,)
+❌ Including ₹ symbol in price fields
+❌ Agorich Price >= MRP (must be less)
+❌ Empty product names
+❌ Invalid number formats (text in number fields)
+
+
+TROUBLESHOOTING:
+---------------
+If import fails, check:
+1. All required columns are present
+2. Headers match exactly (case-insensitive but spelling must match)
+3. All price values are valid numbers
+4. Agorich Price < MRP for all products
+5. No empty product names
+6. CSV file is saved as .csv (not .xlsx or .txt)
+
+
+HOW TO CREATE CSV:
+------------------
+1. Open Excel or Google Sheets
+2. Create columns: name, stock, mrp, agorich_price, pack_size, batch_number, expiry_date, mfg
+3. Fill in your product data
+4. Save As → CSV (Comma delimited) (.csv)
+5. Use this file for import
+
+================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
