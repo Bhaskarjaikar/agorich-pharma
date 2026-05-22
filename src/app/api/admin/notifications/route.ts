@@ -72,47 +72,38 @@ export async function POST(request: NextRequest) {
     const { data: tokens } = await query
     const deviceTokens = tokens?.map(t => t.device_token) || []
 
-    if (deviceTokens.length === 0) {
-      return NextResponse.json(
-        { success: true, sent: 0, message: 'No active device tokens found' }
-      )
-    }
-
-    const app = initFirebaseAdmin()
-    if (!app) {
-      return NextResponse.json(
-        { error: 'Firebase Admin not configured' },
-        { status: 500 }
-      )
-    }
-
     let sentCount = 0
     let failedCount = 0
 
-    const dataPayload: Record<string, string> = {
-      click_action: click_action || '/dashboard',
-      ...(image ? { image_url: image } : {}),
-    }
+    // Try to send push notifications (if Firebase is configured and tokens exist)
+    const app = initFirebaseAdmin()
+    if (app && deviceTokens.length > 0) {
+      const dataPayload: Record<string, string> = {
+        click_action: click_action || '/dashboard',
+        ...(image ? { image_url: image } : {}),
+      }
 
-    for (const token of deviceTokens) {
-      try {
-        const result = await sendPushNotification(token, {
-          title,
-          body: message,
-          image,
-          data: dataPayload,
-        })
+      for (const token of deviceTokens) {
+        try {
+          const result = await sendPushNotification(token, {
+            title,
+            body: message,
+            image,
+            data: dataPayload,
+          })
 
-        if (result.success) {
-          sentCount++
-        } else {
+          if (result.success) {
+            sentCount++
+          } else {
+            failedCount++
+          }
+        } catch (error) {
           failedCount++
         }
-      } catch (error) {
-        failedCount++
       }
     }
 
+    // ALWAYS save notification to database for in-app display
     try {
       if (target_roles && target_roles.length > 0) {
         for (const role of target_roles) {
@@ -153,6 +144,10 @@ export async function POST(request: NextRequest) {
       }
     } catch (dbError) {
       console.error('Failed to save notification to DB:', dbError)
+      return NextResponse.json(
+        { error: 'Failed to save notification' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({
@@ -160,6 +155,9 @@ export async function POST(request: NextRequest) {
       sent: sentCount,
       failed: failedCount,
       total: deviceTokens.length,
+      message: deviceTokens.length === 0 
+        ? 'Notification saved! Push notifications will work once users enable them.' 
+        : undefined,
     })
   } catch (e) {
     console.error('Error in broadcast notification:', e)
