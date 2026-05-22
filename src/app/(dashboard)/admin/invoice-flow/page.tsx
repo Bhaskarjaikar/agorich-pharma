@@ -167,8 +167,6 @@ export default function InvoiceFlowDashboard() {
     if (!loading && user && !isAdmin) {
       setError('Access denied. Admin privileges required.')
       setInvoices([])
-      setGrouped({})
-      setCounts({})
     }
   }, [loading, user, isAdmin])
 
