@@ -15,7 +15,7 @@ import {
 let app: FirebaseApp | null = null
 let messaging: Messaging | null = null
 let messageListener: Unsubscribe | null = null
-let tokenRefreshListener: Unsubscribe | null = null
+const tokenRefreshListener: Unsubscribe | null = null
 
 export interface FCMConfig {
   apiKey: string
@@ -39,12 +39,11 @@ export interface PermissionResult {
 }
 
 /**
- * Initialize Firebase app and messaging
+ * Initialize Firebase app and messaging with SSR safety
  */
 export async function initializeMessaging(): Promise<{ app: FirebaseApp; messaging: Messaging } | null> {
-  // Check if we're in browser
-  if (typeof window === 'undefined') {
-    console.warn('Messaging can only be initialized in browser')
+  // Strict SSR safety check
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return null
   }
 
@@ -52,6 +51,12 @@ export async function initializeMessaging(): Promise<{ app: FirebaseApp; messagi
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
   if (!apiKey) {
     console.warn('Firebase API key not configured')
+    return null
+  }
+
+  // Check browser support before any Firebase initialization
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    console.warn('Browser does not support required features for FCM')
     return null
   }
 
@@ -85,106 +90,181 @@ export async function initializeMessaging(): Promise<{ app: FirebaseApp; messagi
     return { app, messaging }
   } catch (error) {
     console.error('Error initializing Firebase Messaging:', error)
+    // Reset on error to allow retry
+    app = null
+    messaging = null
     return null
   }
 }
 
 /**
- * Register service worker for FCM
+ * Register service worker for FCM with proper scoping and error handling
  */
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
-  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+  // Strict SSR and browser support checks
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return null
+  }
+
+  if (!('serviceWorker' in navigator)) {
     console.warn('Service workers are not supported in this browser')
     return null
   }
 
   try {
-    // Check if service worker is already registered
+    // First, check for existing registration with proper scope
     const existingRegistration = await navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js')
+    
     if (existingRegistration) {
-      console.log('Service worker already registered')
-      return existingRegistration
+      console.log('✅ Service worker already registered:', existingRegistration.scope)
+      
+      // Ensure the service worker is active
+      if (existingRegistration.active) {
+        return existingRegistration
+      } else if (existingRegistration.installing) {
+        // Wait for installation to complete
+        await new Promise<void>((resolve) => {
+          existingRegistration.installing!.addEventListener('statechange', () => {
+            if (existingRegistration.installing!.state === 'activated') {
+              resolve()
+            }
+          })
+        })
+        return existingRegistration
+      }
     }
 
-    // Register new service worker
-    console.log('Registering service worker...')
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    console.log('Service worker registered:', registration.scope)
+    // Register new service worker with explicit scope
+    console.log('📦 Registering service worker...')
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+      scope: '/',
+      type: 'classic'
+    })
+
+    console.log('✅ Service worker registered:', registration.scope)
+
+    // Wait for the service worker to be ready
+    if (registration.installing) {
+      await new Promise<void>((resolve) => {
+        registration.installing!.addEventListener('statechange', () => {
+          if (registration.installing!.state === 'activated') {
+            console.log('✨ Service worker activated')
+            resolve()
+          }
+        })
+      })
+    } else if (registration.waiting) {
+      // If it's waiting, skip waiting to activate
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' })
+    }
+
     return registration
-  } catch (error) {
-    console.error('Service worker registration failed:', error)
+
+  } catch (error: any) {
+    console.error('❌ Service worker registration failed:', error)
+    
+    // Provide specific error messages for common issues
+    if (error?.name === 'SecurityError') {
+      console.error('⚠️ Service worker registration blocked by security policy. Ensure HTTPS or localhost.')
+    } else if (error?.name === 'TypeError') {
+      console.error('⚠️ Service worker script not found or invalid.')
+    }
+    
     return null
   }
 }
 
 /**
- * Get FCM token for this device
+ * Get FCM token for this device with proper service worker registration
  */
 export async function getFCMToken(): Promise<TokenResult> {
-  if (typeof window === 'undefined') {
+  // Strict SSR check
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return { success: false, error: 'Browser only' }
   }
 
   try {
-    // Check if messaging is supported
+    // Step 1: Check browser support
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      return { success: false, error: 'Browser does not support required features' }
+    }
+
+    // Step 2: Check if messaging is supported
     const supported = await isSupported()
     if (!supported) {
-      return { success: false, error: 'FCM not supported' }
+      return { success: false, error: 'Firebase Messaging not supported' }
     }
 
-    // Initialize messaging
-    const result = await initializeMessaging()
-    if (!result) {
-      return { success: false, error: 'Firebase not initialized' }
-    }
-
-    // Register service worker
+    // Step 3: Register service worker FIRST (before Firebase initialization)
     const swRegistration = await registerServiceWorker()
     if (!swRegistration) {
       return { success: false, error: 'Service worker registration failed' }
     }
 
-    // Get VAPID key
+    // Step 4: Ensure service worker is active and ready
+    if (!swRegistration.active) {
+      return { success: false, error: 'Service worker not active' }
+    }
+
+    // Step 5: Initialize Firebase messaging
+    const result = await initializeMessaging()
+    if (!result) {
+      return { success: false, error: 'Firebase initialization failed' }
+    }
+
+    // Step 6: Get VAPID key
     const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
     if (!vapidKey) {
       console.warn('VAPID key not configured')
       return { success: false, error: 'VAPID key not configured' }
     }
 
-    // Validate VAPID key format
+    // Step 7: Validate VAPID key format
     if (!/^[A-Za-z0-9_-]+$/.test(vapidKey)) {
       console.warn('Invalid VAPID key format')
-      return { success: false, error: 'Invalid VAPID key' }
+      return { success: false, error: 'Invalid VAPID key format' }
     }
 
-    // Get token
+    // Step 8: Get FCM token with proper configuration
     const token = await getToken(result.messaging, {
       vapidKey: vapidKey,
       serviceWorkerRegistration: swRegistration,
     })
 
     if (token) {
-      console.log('✅ FCM Token obtained')
+      console.log('✅ FCM Token obtained successfully')
       return { success: true, token }
     } else {
-      return { success: false, error: 'No token returned' }
+      return { success: false, error: 'No token returned from Firebase' }
     }
 
   } catch (error: any) {
-    console.error('Error getting FCM token:', error?.message || error)
+    console.error('❌ Error getting FCM token:', error)
     
-    // Handle specific errors
-    if (error?.code === 'messaging/registered-service-worker-not-found') {
-      return { success: false, error: 'Service worker not found' }
-    }
-    if (error?.code === 'messaging/use-service-worker-missing') {
-      return { success: false, error: 'Service worker missing' }
-    }
-    if (error?.code === 'messaging/invalid-vapid-key') {
-      return { success: false, error: 'Invalid VAPID key' }
+    // Handle specific Firebase messaging errors
+    if (error?.code) {
+      switch (error.code) {
+        case 'messaging/permission-blocked':
+          return { success: false, error: 'Notification permission blocked by browser' }
+        case 'messaging/permission-default':
+          return { success: false, error: 'Notification permission not granted' }
+        case 'messaging/registered-service-worker-not-found':
+          return { success: false, error: 'Service worker not found. Please refresh the page.' }
+        case 'messaging/use-service-worker-missing':
+          return { success: false, error: 'Service worker registration missing' }
+        case 'messaging/invalid-vapid-key':
+          return { success: false, error: 'Invalid VAPID key configuration' }
+        case 'messaging/failed-service-worker-registration':
+          return { success: false, error: 'Service worker registration failed' }
+        case 'messaging/token-unsubscribe':
+        case 'messaging/token-update':
+          // Token needs refresh, trigger callback
+          triggerTokenRefresh()
+          return { success: false, error: 'Token needs refresh' }
+      }
     }
     
-    return { success: false, error: error?.message || 'Unknown error' }
+    return { success: false, error: error?.message || 'Unknown error getting FCM token' }
   }
 }
 
@@ -216,43 +296,83 @@ export async function requestNotificationPermission(): Promise<PermissionResult>
 }
 
 /**
- * Listen for foreground messages
+ * Listen for foreground messages with duplicate prevention
  */
 export function onForegroundMessage(callback: NextFn<MessagePayload>): Unsubscribe | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return null
   }
 
   try {
-    // Initialize messaging if not done
+    // Clean up existing listener first
+    if (messageListener) {
+      messageListener()
+      messageListener = null
+    }
+
+    // Initialize messaging
     initializeMessaging().then((result) => {
-      if (result && !messageListener) {
-        messageListener = onMessage(result.messaging, callback)
-        console.log('✅ Foreground message listener registered')
+      if (result) {
+        // Set up Firebase onMessage listener
+        messageListener = onMessage(result.messaging, (payload) => {
+          console.log('📱 Firebase foreground message received:', payload)
+          
+          // Check if app is focused to prevent duplicates
+          if (document.hasFocus()) {
+            console.log('🎯 App is focused, handling message in-app')
+            callback(payload)
+          } else {
+            console.log('🔍 App not focused, allowing service worker notification')
+          }
+        })
+        
+        console.log('✅ Firebase foreground message listener registered')
       }
     })
 
+    // Also listen for service worker messages (for legacy push or forwarded messages)
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'FCM_FOREGROUND_MESSAGE') {
+        console.log('📱 Service worker forwarded message:', event.data.payload)
+        
+        // Check if app is focused
+        if (document.hasFocus()) {
+          console.log('🎯 App is focused, handling forwarded message in-app')
+          callback(event.data.payload)
+        }
+      }
+    }
+
+    // Add service worker message listener
+    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage)
+
     // Return cleanup function
     return () => {
+      // Clean up Firebase listener
       if (messageListener) {
         messageListener()
         messageListener = null
-        console.log('🧹 Foreground message listener removed')
+        console.log('🧹 Firebase foreground message listener removed')
       }
+      
+      // Clean up service worker listener
+      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage)
+      console.log('🧹 Service worker message listener removed')
     }
   } catch (error) {
-    console.error('Error setting up foreground message listener:', error)
+    console.error('❌ Error setting up foreground message listener:', error)
     return null
   }
 }
 
 /**
  * Listen for token refresh
- * Note: In Firebase v10+, token refresh is handled by catching deleted token errors
- * when calling getToken(). The callback will be called when a token refresh is detected.
+ * In Firebase v10+, token refresh is handled by:
+ * 1. Listening for 'messaging/token-refresh' events
+ * 2. Catching errors when getToken() fails with specific error codes
  */
 export function onTokenRefreshCallback(callback: () => void): Unsubscribe | null {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return null
   }
 
@@ -268,6 +388,16 @@ export function onTokenRefreshCallback(callback: () => void): Unsubscribe | null
 
 // Global ref to store the callback
 let tokenRefreshCallbackRef: (() => void) | null = null
+
+/**
+ * Trigger token refresh callback (to be called from getFCMToken on specific errors)
+ */
+export function triggerTokenRefresh(): void {
+  if (tokenRefreshCallbackRef) {
+    console.log('🔄 Triggering token refresh callback')
+    tokenRefreshCallbackRef()
+  }
+}
 
 /**
  * Check if messaging is supported in current browser

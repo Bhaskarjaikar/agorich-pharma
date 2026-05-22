@@ -1,8 +1,10 @@
-// Firebase Messaging Service Worker v2.0
+// Firebase Messaging Service Worker v3.0
 // Production-grade implementation for Agorich Pharma
+// Optimized for Next.js + Firebase v12.13.0
 
-import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, onBackgroundMessage, getToken } from 'firebase/messaging';
+// Import Firebase libraries using importScripts (required for service workers)
+importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging.js');
 
 // Firebase configuration from environment
 const firebaseConfig = {
@@ -20,8 +22,8 @@ let messaging = null;
 
 try {
   if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    messaging = getMessaging(app);
+    app = firebase.apps.length === 0 ? firebase.initializeApp(firebaseConfig) : firebase.apps[0];
+    messaging = firebase.messaging();
     console.log('✅ Firebase initialized in service worker');
   } else {
     console.warn('⚠️ Firebase config missing in service worker');
@@ -30,7 +32,7 @@ try {
   console.error('❌ Firebase initialization error in service worker:', error);
 }
 
-// Handle push events
+// Handle push events (legacy FCM or direct push API)
 self.addEventListener('push', (event) => {
   console.log('📬 Push event received');
 
@@ -43,55 +45,59 @@ self.addEventListener('push', (event) => {
     const data = event.data.json();
     console.log('📋 Push payload:', data);
 
-    // Support multiple payload formats
-    const notificationData = data.notification || data.data || data;
-
-    const title = notificationData.title || 'Agorich Pharma';
-    const body = notificationData.body || notificationData.message || 'New notification';
-    const icon = notificationData.icon || '/agorich-logo.png';
-    const badge = notificationData.badge || '/agorich-logo.png';
-    const image = notificationData.image || notificationData.image_url || null;
-    const tag = notificationData.tag || 'agorich-notification';
-    const clickAction = notificationData.click_action || notificationData.url || data.click_action || '/dashboard';
-
-    // Build notification options
-    const options = {
-      body,
-      icon,
-      badge,
-      tag,
-      renotify: true,
-      requireInteraction: false,
-      data: {
-        url: clickAction,
-        click_action: clickAction,
-        ...notificationData,
-      },
-      actions: [],
-      vibrate: [200, 100, 200],
-    };
-
-    // Add image if provided
-    if (image) {
-      options['image'] = image;
+    // Check if this is a Firebase message (has "firebase" key)
+    const isFirebaseMessage = data.firebase || data['google.c.a.e'] === '1';
+    
+    if (isFirebaseMessage && messaging) {
+      // Firebase messages are handled by onBackgroundMessage
+      console.log('🔥 Firebase message, handled by onBackgroundMessage');
+      return;
     }
 
-    // Add default open action
-    options.actions.push({
-      action: 'open',
-      title: 'View',
-    });
+    // Handle legacy push notifications
+    // Check if app is in foreground before showing notification
+    event.waitUntil(
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        const hasFocusedClient = clients.some(client => client.focused);
+        
+        if (!hasFocusedClient) {
+          // App is in background or closed, show notification
+          const notificationData = data.notification || data.data || data;
 
-    // Add dismiss action
-    options.actions.push({
-      action: 'dismiss',
-      title: 'Dismiss',
-    });
+          const title = notificationData.title || 'Agorich Pharma';
+          const body = notificationData.body || notificationData.message || 'New notification';
+          const icon = notificationData.icon || '/agorich-logo.png';
+          const clickAction = notificationData.click_action || notificationData.url || '/dashboard';
 
-    // Show notification
-    const showNotificationPromise = self.registration.showNotification(title, options);
+          const options = {
+            body,
+            icon,
+            data: {
+              url: clickAction,
+              click_action: clickAction,
+              ...notificationData,
+            },
+            actions: [
+              { action: 'open', title: 'View' },
+              { action: 'dismiss', title: 'Dismiss' }
+            ],
+            vibrate: [200, 100, 200],
+            tag: 'agorich-notification',
+            renotify: true,
+          };
 
-    event.waitUntil(showNotificationPromise);
+          return self.registration.showNotification(title, options);
+        } else {
+          // App is in foreground, forward to client
+          clients.forEach((client) => {
+            client.postMessage({
+              type: 'PUSH_FOREGROUND_MESSAGE',
+              payload: data,
+            });
+          });
+        }
+      })
+    );
 
   } catch (error) {
     console.error('❌ Error handling push event:', error);
@@ -117,17 +123,29 @@ self.addEventListener('notificationclick', (event) => {
 
   // Handle notification click
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Try to focus existing window
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          console.log('🔄 Focusing existing client');
-          client.navigate(clickAction);
-          return client.focus();
+    clients.matchAll({ 
+      type: 'window', 
+      includeUncontrolled: true 
+    }).then((clientList) => {
+      // Check if there's an existing client with our origin
+      const existingClient = clientList.find(client => 
+        client.url.startsWith(self.location.origin)
+      );
+
+      if (existingClient) {
+        console.log('🔄 Focusing existing client');
+        // Focus the existing client
+        if ('focus' in existingClient) {
+          existingClient.focus();
         }
+        // Navigate to the click action if needed
+        if (existingClient.url !== clickAction && 'navigate' in existingClient) {
+          existingClient.navigate(clickAction);
+        }
+        return;
       }
 
-      // Open new window if none found
+      // Open new window if no existing client found
       if (clients.openWindow) {
         console.log('🌐 Opening new window:', clickAction);
         return clients.openWindow(clickAction);
@@ -143,20 +161,52 @@ self.addEventListener('notificationclose', (event) => {
   console.log('🔕 Notification closed');
 });
 
-// Handle messages in foreground (when app is open)
+// Handle background messages (when app is not in foreground)
 if (messaging) {
-  onBackgroundMessage(messaging, (payload) => {
-    console.log('📱 Foreground message received:', payload);
+  firebase.messaging().onBackgroundMessage((payload) => {
+    console.log('📱 Background message received:', payload);
 
-    // This won't show a notification automatically when app is in foreground
-    // The app needs to handle this with onMessage in the client code
-    self.clients.matchAll({ type: 'window' }).then((clients) => {
-      clients.forEach((client) => {
-        client.postMessage({
-          type: 'FCM_MESSAGE',
-          payload: payload,
+    // Only show notification if app is not in foreground
+    // Check if any client is focused
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const hasFocusedClient = clients.some(client => client.focused);
+      
+      if (!hasFocusedClient) {
+        // App is in background or closed, show notification
+        const notificationData = payload.notification || payload.data || payload;
+        
+        const title = notificationData.title || 'Agorich Pharma';
+        const body = notificationData.body || notificationData.message || 'New notification';
+        const icon = notificationData.icon || '/agorich-logo.png';
+        const clickAction = notificationData.click_action || notificationData.url || '/dashboard';
+
+        const options = {
+          body,
+          icon,
+          data: {
+            url: clickAction,
+            click_action: clickAction,
+            ...notificationData,
+          },
+          actions: [
+            { action: 'open', title: 'View' },
+            { action: 'dismiss', title: 'Dismiss' }
+          ],
+          vibrate: [200, 100, 200],
+          tag: 'agorich-notification',
+          renotify: true,
+        };
+
+        return self.registration.showNotification(title, options);
+      } else {
+        // App is in foreground, forward message to client for in-app handling
+        clients.forEach((client) => {
+          client.postMessage({
+            type: 'FCM_FOREGROUND_MESSAGE',
+            payload: payload,
+          });
         });
-      });
+      }
     });
   });
 }
