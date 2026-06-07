@@ -1,12 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
 import { createClient } from '@supabase/supabase-js'
 import { checkEmergencyStatus, createEmergencyBlockResponse } from '@/lib/middleware/emergency-check'
 import { verifyAdmin } from '@/lib/api-security'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+// Lazy initialization to avoid build errors when API key is not set
+let openaiInstance: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI {
+  if (!openaiInstance) {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY is not configured')
+    }
+    openaiInstance = new (require('openai'))({ apiKey })
+  }
+  return openaiInstance
+}
 
 const MAX_MESSAGE_LENGTH = 10000
 const MAX_MESSAGES = 20
@@ -393,7 +402,7 @@ When the user types "Yes" or confirms an action, proceed to execute the recommen
 
     const allMessages = [systemMessage, ...sanitizedMessages]
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-4o-mini',
       messages: allMessages as any,
       tools: tools as any,
@@ -463,7 +472,7 @@ When the user types "Yes" or confirms an action, proceed to execute the recommen
         }
       }
 
-      const secondResponse = await openai.chat.completions.create({
+      const secondResponse = await getOpenAIClient().chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [...allMessages, message, ...toolResults] as any
       })
