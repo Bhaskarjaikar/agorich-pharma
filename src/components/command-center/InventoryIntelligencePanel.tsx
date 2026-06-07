@@ -116,7 +116,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
   const highCount = alerts.filter(a => a.urgency === 'HIGH').length
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -154,33 +154,33 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
         {loading && !summary ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className={`h-20 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-20 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
           <>
             {summary && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Monitored</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Monitored</div>
                   <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.total_products_monitored}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Reorder Now</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Reorder Now</div>
                   <div className={`text-lg font-bold ${summary.reorder_now_count > 0 ? 'text-orange-500' : darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.reorder_now_count}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Expiring Soon</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Expiring Soon</div>
                   <div className={`text-lg font-bold ${summary.expiring_soon_count > 0 ? 'text-yellow-500' : darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.expiring_soon_count}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Low Stock</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Low Stock</div>
                   <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.low_stock_count}
                   </div>
@@ -193,7 +193,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                 value={filterUrgency}
                 onChange={(e) => setFilterUrgency(e.target.value)}
                 className={`text-sm px-2 py-1 rounded border ${
-                  darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  darkMode ? 'bg-card border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'
                 }`}
               >
                 <option value="all">All Urgency</option>
@@ -206,7 +206,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
                 className={`text-sm px-2 py-1 rounded border ${
-                  darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  darkMode ? 'bg-card border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'
                 }`}
               >
                 <option value="all">All Types</option>
@@ -219,7 +219,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
 
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {filteredAlerts.length === 0 ? (
-                <div className={`text-center py-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <div className={`text-center py-8 ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                   <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
                   <p>All inventory levels healthy</p>
                 </div>
@@ -227,7 +227,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                 filteredAlerts.slice(0, 20).map((alert, idx) => (
                   <div
                     key={`${alert.batch_id}-${idx}`}
-                    className={`p-4 rounded-lg border ${darkMode ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-slate-50'}`}
+                    className={`p-4 rounded-lg border ${darkMode ? 'border-border bg-card/50' : 'border-slate-200 bg-slate-50'}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
@@ -239,14 +239,14 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                             {alert.urgency}
                           </Badge>
                         </div>
-                        <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                        <p className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
                           {alert.recommendation}
                         </p>
                         <div className="flex items-center gap-4 mt-2">
                           {alert.alert_type === 'EXPIRING_SOON' && (
                             <div className="flex items-center gap-1">
                               <Calendar className={`w-4 h-4 ${darkMode ? 'text-orange-400' : 'text-orange-500'}`} />
-                              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                                 Expires in {alert.days_to_expiry} days
                               </span>
                             </div>
@@ -254,15 +254,15 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                           {alert.avg_daily_demand > 0 && (
                             <div className="flex items-center gap-1">
                               <TrendUp className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
-                              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                                 {alert.avg_daily_demand}/day demand
                               </span>
                             </div>
                           )}
                           {alert.reorder_point > 0 && (
                             <div className="flex items-center gap-1">
-                              <Package className={`w-4 h-4 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
-                              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <Package className={`w-4 h-4 ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`} />
+                              <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                                 ROP: {alert.reorder_point}
                               </span>
                             </div>
@@ -273,7 +273,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                         <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                           {alert.current_available}
                         </div>
-                        <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                           available
                         </div>
                         {alert.recommended_order_qty > 0 && (
@@ -281,7 +281,7 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                             <div className={`text-sm font-semibold ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
                               +{alert.recommended_order_qty}
                             </div>
-                            <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                            <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                               recommended
                             </div>
                           </>
@@ -290,10 +290,10 @@ export function InventoryIntelligencePanel({ darkMode = true }: InventoryPanelPr
                     </div>
                     <div className="mt-2 pt-2 border-t border-slate-600/30">
                       <div className="flex items-center justify-between text-xs">
-                        <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>
+                        <span className={darkMode ? 'text-slate-500' : 'text-muted-foreground'}>
                           Batch: {alert.batch_number}
                         </span>
-                        <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>
+                        <span className={darkMode ? 'text-slate-500' : 'text-muted-foreground'}>
                           {alert.distributor_name}
                         </span>
                       </div>

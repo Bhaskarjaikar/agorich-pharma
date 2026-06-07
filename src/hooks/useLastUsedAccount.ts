@@ -14,6 +14,7 @@ export interface LastUsedAccount {
   role?: string
   provider?: string
   lastUsedAt: number
+  password?: string
 }
 
 interface StoredAccountsData {

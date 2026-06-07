@@ -41,6 +41,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 // Authentication removed
 import { useTranslation } from 'react-i18next'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { type Profile } from '@/lib/supabase-client'
 
 interface Product {
   id: string
@@ -153,9 +154,23 @@ export default function CreateInvoicePage() {
   const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, profile, loading } = useSupabaseAuth()
-  // Authentication removed - using localStorage for user data
-  const authLoading = false
+  const { user, profile, loading: authLoading } = useSupabaseAuth()
+  const [localProfile, setLocalProfile] = useState<Profile | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    setIsHydrated(true)
+    try {
+      const cachedProfile = localStorage.getItem('cached_profile')
+      if (cachedProfile) {
+        setLocalProfile(JSON.parse(cachedProfile))
+      }
+    } catch (error) {
+      console.error('Error loading cached profile:', error)
+    }
+  }, [])
+
+  const effectiveProfile = profile || localProfile
   const [searchQuery, setSearchQuery] = useState('')
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [isSaving, setIsSaving] = useState(false)
@@ -337,7 +352,7 @@ export default function CreateInvoicePage() {
           disabled={currentPage === 1}
           className={`px-2 py-1 text-xs rounded transition-colors ${
             darkMode
-              ? 'bg-slate-700 text-white hover:bg-slate-600'
+              ? 'bg-card text-white hover:bg-slate-600'
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
@@ -355,7 +370,7 @@ export default function CreateInvoicePage() {
                   currentPage === page
                     ? 'bg-emerald-600 text-white'
                     : darkMode
-                    ? 'bg-slate-700 text-white hover:bg-slate-600'
+                    ? 'bg-card text-white hover:bg-slate-600'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -370,7 +385,7 @@ export default function CreateInvoicePage() {
           disabled={currentPage === totalPages}
           className={`px-2 py-1 text-xs rounded transition-colors ${
             darkMode
-              ? 'bg-slate-700 text-white hover:bg-slate-600'
+              ? 'bg-card text-white hover:bg-slate-600'
               : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
           } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
@@ -659,7 +674,7 @@ export default function CreateInvoicePage() {
       return
     }
 
-    if (!user || !profile) {
+    if (!user || !effectiveProfile) {
       alert('Unable to save invoice. Please sign in again.')
       return
     }
@@ -773,7 +788,7 @@ export default function CreateInvoicePage() {
     } finally {
       setIsSaving(false)
     }
-  }, [cartItems, user, profile, isEditMode, editingInvoice, router])
+  }, [cartItems, user, effectiveProfile, isEditMode, editingInvoice, router])
 
   const handleSaveAndPay = useCallback(async () => {
     if (cartItems.length === 0 || !user?.id) return
@@ -1419,23 +1434,13 @@ export default function CreateInvoicePage() {
   }, [editingInvoice, products]) // Run when editingInvoice or products change
 
   // Debug: Log profile data
-  console.log('Invoice Page - Profile Data:', profile)
+  console.log('Invoice Page - Profile Data:', effectiveProfile)
   console.log('Invoice Page - User Data:', user)
   console.log('Edit Mode:', isEditMode)
   console.log('Editing Invoice:', editingInvoice)
 
-  // Show loading state while profile is loading (with timeout)
-  if (loading || authLoading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <div className="text-center">
-          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4 ${darkMode ? 'border-slate-400' : 'border-slate-600'}`}></div>
-          <p className={`${darkMode ? 'text-white' : 'text-slate-900'}`}>Loading customer profile...</p>
-          <p className={`text-sm mt-2 ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>This may take a moment...</p>
-        </div>
-      </div>
-    )
-  }
+  // Don't show loading screen anymore - use cached profile immediately
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -1463,9 +1468,9 @@ export default function CreateInvoicePage() {
             >
               {darkMode ? <Sun className="w-4 h-4" weight="fill" /> : <Moon className="w-4 h-4" weight="fill" />}
             </Button>
-            <div className={`text-xs md:text-sm ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              <span className={`${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Items:</span> {cartItems.length} |
-              <span className={`ml-1 md:ml-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Total:</span> {formatCurrency(getGrandTotal())}
+            <div className="text-xs md:text-sm text-foreground">
+              <span className="text-muted-foreground">Items:</span> {cartItems.length} |
+              <span className="ml-1 md:ml-2 text-muted-foreground">Total:</span> {formatCurrency(getGrandTotal())}
             </div>
 
 
@@ -1474,7 +1479,7 @@ export default function CreateInvoicePage() {
             <Button
               onClick={handleSave}
               disabled={isSaving || cartItems.length === 0}
-              className={`text-xs md:text-sm py-2 px-3 md:py-2 md:px-4 ${isEditMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-green-600 hover:bg-green-700 text-white"}`}
+              className="text-xs md:text-sm py-2 px-3 md:py-2 md:px-4 bg-green-600 hover:bg-green-700 text-white"
             >
               <FloppyDisk className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
               {isSaving ? 'Loading...' : isEditMode ? 'Save' : 'Save Invoice'}
@@ -1491,10 +1496,10 @@ export default function CreateInvoicePage() {
         transition={{ delay: 0.1 }}
         className="sticky top-[60px] z-30 w-full"
       >
-        <div className={`flex flex-row gap-2 sm:gap-3 p-2 sm:p-3 rounded-b-2xl shadow-2xl backdrop-blur-xl border-b-2 border-x-2 overflow-x-auto ${darkMode ? 'bg-slate-800/95 border-slate-700/80' : 'bg-white/95 border-slate-200/80'}`}>
+        <div className={`flex flex-row gap-2 sm:gap-3 p-2 sm:p-3 rounded-b-2xl shadow-2xl backdrop-blur-xl border-b-2 border-x-2 overflow-x-auto bg-background/95 border-border/80`}>
           {/* Dashboard - Inactive (Enhanced) */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] bg-card text-foreground border border-border hover:bg-muted"
             onClick={() => router.push('/distributor')}
           >
             <House className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1512,7 +1517,7 @@ export default function CreateInvoicePage() {
 
           {/* Routed Orders - Inactive (Enhanced) */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] bg-card text-foreground border border-border hover:bg-muted"
             onClick={() => router.push('/distributor/routed-orders')}
           >
             <List className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1521,7 +1526,7 @@ export default function CreateInvoicePage() {
 
           {/* Payables - New */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] bg-card text-foreground border border-border hover:bg-muted"
             onClick={() => router.push('/distributor/payables')}
           >
             <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1530,16 +1535,15 @@ export default function CreateInvoicePage() {
 
           {/* Expiry Watchlist - New */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
-            onClick={() => router.push('/distributor/expiry-watchlist')}
+            className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] bg-card text-foreground border border-border hover:bg-muted"
           >
             <Calendar className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
             <span className="text-sm sm:text-base font-medium">Expiry Watchlist</span>
           </Button>
 
           {/* Invoices - Inactive (Enhanced) */}
-          <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+          <Button
+            className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] bg-card text-foreground border border-border hover:bg-muted"
             onClick={() => router.push('/distributor/invoices')}
           >
             <FileText className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1550,14 +1554,14 @@ export default function CreateInvoicePage() {
       </div>
 
       {/* Mobile Tab Navigation */}
-      <div className="block md:hidden bg-white/10 border-b border-white/10 p-2">
+      <div className="block md:hidden bg-card border-b border-border p-2">
         <div className="flex gap-2">
           <button
             onClick={() => setActiveTab('products')}
             className={`flex-1 px-4 py-2 rounded-md font-medium transition-all ${
-              activeTab === 'products' 
-                ? 'bg-yellow-500 hover:bg-yellow-600 text-gray-900 shadow-lg' 
-                : `${darkMode ? 'bg-white/20 text-white hover:bg-white/30 border border-white/30' : 'bg-slate-200 text-slate-700 hover:bg-slate-300 border border-slate-300'}`
+              activeTab === 'products'
+                ? 'bg-yellow-500 hover:bg-yellow-600 text-gray-900 shadow-lg'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
             }`}
           >
             Products ({filteredProducts.length})
@@ -1567,7 +1571,7 @@ export default function CreateInvoicePage() {
             className={`flex-1 px-4 py-2 rounded-md font-medium transition-all flex items-center justify-center gap-1.5 ${
               activeTab === 'invoice'
                 ? 'bg-yellow-500 hover:bg-yellow-600 text-gray-900 shadow-lg'
-                : `${darkMode ? 'bg-white/20 text-white hover:bg-white/30 border border-white/30' : 'bg-slate-200 text-slate-700 hover:bg-slate-300 border border-slate-300'}`
+                : 'bg-muted text-muted-foreground hover:bg-muted/80 border border-border'
             }`}
           >
             <ShoppingCart className="w-4 h-4" />
@@ -1586,24 +1590,24 @@ export default function CreateInvoicePage() {
           style={{ width: `${leftPanelWidth}%` }}
         >
           {/* Product Search */}
-          <div className={`p-4 border-b ${darkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+          <div className="p-4 border-b bg-muted/50 border-border">
             <div className="relative mb-4">
-              <MagnifyingGlass className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-slate-400'}`} />
+              <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder="Search products"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`pl-10 ${darkMode ? 'bg-white/10 border-white/20 text-white placeholder:text-gray-300' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                className="pl-10 bg-background border-input text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            
+
           </div>
 
           {/* Product List */}
           <div className="flex-1 overflow-auto p-4">
             {productsLoading ? (
               <div className="flex items-center justify-center h-32">
-                <div className={`${darkMode ? 'text-white/60' : 'text-slate-500'}`}>Loading...</div>
+                <div className="text-muted-foreground">Loading...</div>
               </div>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1617,10 +1621,10 @@ export default function CreateInvoicePage() {
                   <div className="glass-card p-3 hover-lift group cursor-pointer" onClick={() => addToCart(product)}>
                     <div className="flex items-start gap-3">
                       {/* Product Icon */}
-                      <div className="w-12 h-12 rounded-lg bg-slate-700/50 flex items-center justify-center flex-shrink-0">
-                        <Package className="w-6 h-6 text-slate-400" weight="thin" />
+                      <div className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-muted">
+                        <Package className="w-6 h-6 text-muted-foreground" weight="thin" />
                       </div>
-                      
+
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
@@ -1628,7 +1632,7 @@ export default function CreateInvoicePage() {
                             <h3 className="font-medium text-foreground text-sm leading-tight truncate">{product.name}</h3>
                             <p className="text-xs text-muted-foreground mt-0.5 truncate">{product.manufacturer}</p>
                             <div className="flex items-center gap-1.5 mt-1.5">
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border text-foreground/80">
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-border text-muted-foreground">
                                 {product.category}
                               </Badge>
                               {product.isPrescriptionRequired && (
@@ -1678,23 +1682,23 @@ export default function CreateInvoicePage() {
                         
                         {/* Product Description */}
                         {product.description && (
-                          <p className={`text-xs mt-2 line-clamp-2 ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{product.description}</p>
+                          <p className="text-xs mt-2 line-clamp-2 text-muted-foreground">{product.description}</p>
                         )}
-                        
+
                         {/* Rate and Stock - Desktop Layout */}
-                        <div className={`flex items-center justify-between mt-3 pt-3 border-t ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>MRP:</span>
-                              <span className={`text-xs line-through ${darkMode ? 'text-white/70' : 'text-slate-600'}`}>{formatCurrency(product.mrp || 0)}</span>
+                              <span className="text-xs text-muted-foreground">MRP:</span>
+                              <span className="text-xs line-through text-muted-foreground">{formatCurrency(product.mrp || 0)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`text-xs ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>Rate:</span>
+                              <span className="text-xs text-muted-foreground">Rate:</span>
                               <span className="text-lg font-bold text-emerald-500">₹{calculateRate(product).toFixed(0)}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`text-[10px] ${darkMode ? 'text-white/50' : 'text-slate-400'}`}>Save:</span>
-                              <span className={`text-[10px] ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span className="text-[10px] text-muted-foreground">Save:</span>
+                              <span className="text-[10px] text-muted-foreground">
                                 {formatCurrency((product.mrp || 0) - calculateRate(product))}
                               </span>
                             </div>
@@ -1703,8 +1707,8 @@ export default function CreateInvoicePage() {
                             <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${product.stock > 50 ? 'border-emerald-500/50 text-emerald-500' : product.stock > 20 ? 'border-amber-500/50 text-amber-500' : 'border-rose-500/50 text-rose-500'}`}>
                               Stock: {product.stock}
                             </Badge>
-                            <span className={`text-[10px] ${darkMode ? 'text-white/60' : 'text-slate-500'}`}>Pack: {product.pack_size || 'N/A'}</span>
-                            <span className={`text-[10px] ${darkMode ? 'text-white/40' : 'text-slate-400'}`}>
+                            <span className="text-[10px] text-muted-foreground">Pack: {product.pack_size || 'N/A'}</span>
+                            <span className="text-[10px] text-muted-foreground">
                               {product.expiry_date ? (() => {
                                 try {
                                   const d = new Date(product.expiry_date)
@@ -1787,65 +1791,63 @@ export default function CreateInvoicePage() {
                 {/* Right - Party Details (Customer Information - Legal Requirement) */}
                 {/* Data fetched from onboarding form via Supabase profiles table */}
                 <div className="text-right">
-                  {authLoading ? (
-                    <div className="text-xs text-gray-500">Loading customer details from onboarding form...</div>
-                  ) : profile ? (
+                  {effectiveProfile ? (
                     <>
                       <h3 className="font-bold text-gray-800 text-sm mb-1">
-                        {profile.user_name || 'Customer Name'}
+                        {effectiveProfile.user_name || 'Customer Name'}
                   </h3>
-                      {profile.business_name && (
+                      {effectiveProfile.business_name && (
                         <p className="text-gray-700 text-xs mb-1">
-                          {profile.business_name}
+                          {effectiveProfile.business_name}
                         </p>
                       )}
-                      {profile.business_type && (
+                      {effectiveProfile.business_type && (
                         <p className="text-gray-500 text-xs italic mb-1">
-                          {profile.business_type}
+                          {effectiveProfile.business_type}
                   </p>
                       )}
-                      {profile.address && (
+                      {effectiveProfile.address && (
                         <p className="text-gray-700 text-xs mb-1">
-                          {profile.address}
+                          {effectiveProfile.address}
                         </p>
                       )}
-                      {(profile.city || profile.state || profile.pincode) && (
+                      {(effectiveProfile.city || effectiveProfile.state || effectiveProfile.pincode) && (
                         <p className="text-gray-700 text-xs mb-1">
                           {[
-                            profile.city,
-                            profile.state,
-                            profile.pincode ? `- ${profile.pincode}` : ''
+                            effectiveProfile.city,
+                            effectiveProfile.state,
+                            effectiveProfile.pincode ? `- ${effectiveProfile.pincode}` : ''
                           ].filter(Boolean).join(', ')}
                   </p>
                       )}
-                      {profile.phone && (
+                      {effectiveProfile.phone && (
                         <p className="text-gray-700 text-xs mb-1">
-                          Phone: +91 {profile.phone}
+                          Phone: +91 {effectiveProfile.phone}
                     </p>
                   )}
-                      {profile.gst_number && (
+                      {effectiveProfile.gst_number && (
                         <p className="text-gray-700 text-xs mb-1">
-                          GSTIN: {profile.gst_number}
+                          GSTIN: {effectiveProfile.gst_number}
                         </p>
                       )}
-                      {profile.pan_number && (
+                      {effectiveProfile.pan_number && (
                         <p className="text-gray-700 text-xs mb-1">
-                          PAN: {profile.pan_number}
+                          PAN: {effectiveProfile.pan_number}
                         </p>
                       )}
-                      {profile.aadhar_number && (
+                      {effectiveProfile.aadhar_number && (
                         <p className="text-gray-700 text-xs mb-1">
-                          Aadhar: {profile.aadhar_number}
+                          Aadhar: {effectiveProfile.aadhar_number}
                         </p>
                       )}
-                      {profile.fssai_license && (
+                      {effectiveProfile.fssai_license && (
                         <p className="text-gray-700 text-xs mb-1">
-                          FSSAI: {profile.fssai_license}
+                          FSSAI: {effectiveProfile.fssai_license}
                         </p>
                       )}
-                      {profile.business_registration && (
+                      {effectiveProfile.business_registration && (
                         <p className="text-gray-700 text-xs mb-1">
-                          Reg No: {profile.business_registration}
+                          Reg No: {effectiveProfile.business_registration}
                         </p>
                       )}
                     </>
@@ -2007,7 +2009,7 @@ export default function CreateInvoicePage() {
               }`}>
                 <div className="relative">
                   <MagnifyingGlass className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
-                    darkMode ? 'text-gray-400' : 'text-slate-400'
+                    darkMode ? 'text-gray-400' : 'text-muted-foreground'
                   }`} />
                   <Input
                     placeholder="Search products"
@@ -2016,7 +2018,7 @@ export default function CreateInvoicePage() {
                     className={`pl-10 ${
                       darkMode
                         ? 'bg-white/10 border-white/20 text-white placeholder:text-gray-300'
-                        : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'
+                        : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground'
                     }`}
                   />
                 </div>
@@ -2049,9 +2051,9 @@ export default function CreateInvoicePage() {
                           <div className="flex items-start space-x-2">
                             <div className="relative flex-shrink-0">
                               <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                darkMode ? 'bg-slate-800' : 'bg-slate-100'
+                                darkMode ? 'bg-background' : 'bg-slate-100'
                               }`}>
-                                <Package className={`w-5 h-5 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`} />
+                                <Package className={`w-5 h-5 ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`} />
                               </div>
                               <div className="absolute -top-1 -right-1">
                                 <Badge className="bg-green-500 text-white text-[9px] px-1 py-0">
@@ -2095,7 +2097,7 @@ export default function CreateInvoicePage() {
                               <span className={`${darkMode ? 'text-white/50' : 'text-slate-500'}`}>Pack:</span>
                               <span className={`font-medium ${darkMode ? 'text-white/70' : 'text-slate-700'}`}>{product.pack_size || 'N/A'}</span>
                             </div>
-                            <div className={`flex items-center gap-1 text-[10px] ${darkMode ? 'text-white/40' : 'text-slate-400'}`}>
+                            <div className={`flex items-center gap-1 text-[10px] ${darkMode ? 'text-white/40' : 'text-muted-foreground'}`}>
                               <Calendar className="w-3 h-3" />
                               {product.expiry_date ? (() => {
                                 try {
@@ -2109,7 +2111,7 @@ export default function CreateInvoicePage() {
                           {/* Pricing and Actions - Single Row */}
                           <div className={`flex items-center justify-between pt-1 border-t ${darkMode ? 'border-white/10' : 'border-slate-200'}`}>
                             <div className="flex items-center gap-2">
-                              <span className={`text-[11px] ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>MRP: <span className={`line-through ${darkMode ? 'text-white/60' : 'text-slate-400'}`}>{formatCurrency(product.mrp || 0)}</span></span>
+                              <span className={`text-[11px] ${darkMode ? 'text-white/50' : 'text-slate-500'}`}>MRP: <span className={`line-through ${darkMode ? 'text-white/60' : 'text-muted-foreground'}`}>{formatCurrency(product.mrp || 0)}</span></span>
                               <span className="text-sm font-bold text-green-500">{formatCurrency(calculateRate(product))}</span>
                             </div>
                             
@@ -2153,7 +2155,7 @@ export default function CreateInvoicePage() {
                               <Button
                                 size="sm"
                                 onClick={() => addToCart(product)}
-                                className="h-7 px-2 bg-slate-700 hover:bg-slate-600 text-white text-xs"
+                                className={`h-7 px-2 text-xs ${darkMode ? 'bg-card hover:bg-slate-600 text-white' : 'bg-card hover:bg-slate-600 text-white'}`}
                               >
                                 <Plus className="w-3 h-3 mr-0.5" />
                                 Add

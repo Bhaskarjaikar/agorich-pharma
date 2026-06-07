@@ -45,7 +45,7 @@ function AvatarDisplay({ account, size = 'md' }: { account: LastUsedAccount; siz
   }
 
   if (account.avatarUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
+     
     return (
       <img
         src={account.avatarUrl}
@@ -122,7 +122,7 @@ export function LastUsedAccountCard({
                 Last Used
               </span>
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-sm text-slate-500 dark:text-muted-foreground truncate">
               {account.email}
             </p>
           </div>
@@ -144,7 +144,7 @@ export function LastUsedAccountCard({
           e.stopPropagation()
           setIsExpanded(!isExpanded)
         }}
-        className="absolute top-2 right-2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        className="absolute top-2 right-2 p-1.5 rounded-lg text-muted-foreground hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-background transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
@@ -157,13 +157,13 @@ export function LastUsedAccountCard({
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="pt-3 mt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+            <div className="pt-3 mt-2 border-t border-slate-200 dark:border-border space-y-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   onSwitchAccount()
                 }}
-                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-background transition-colors"
               >
                 <User className="w-4 h-4" />
                 Switch Account
@@ -205,7 +205,7 @@ export function AccountSwitcher({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+      <p className="text-xs font-medium text-slate-500 dark:text-muted-foreground uppercase tracking-wider">
         Or continue with another account
       </p>
       <div className="space-y-2">
@@ -213,21 +213,21 @@ export function AccountSwitcher({
           <button
             key={account.id}
             onClick={() => onSelectAccount(account)}
-            className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-background hover:bg-slate-200 dark:hover:bg-card transition-colors"
           >
             <AvatarDisplay account={account} size="md" />
             <div className="flex-1 text-left">
               <p className="font-medium text-slate-900 dark:text-white text-sm">
                 {account.name || account.email.split('@')[0]}
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{account.email}</p>
+              <p className="text-xs text-slate-500 dark:text-muted-foreground">{account.email}</p>
             </div>
           </button>
         ))}
       </div>
       <button
         onClick={onSignOut}
-        className="w-full text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+        className="w-full text-sm text-slate-500 dark:text-muted-foreground hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
       >
         Sign out of all accounts
       </button>
@@ -242,11 +242,15 @@ export function useOneClickAuth() {
   const [isLoading, setIsLoading] = useState(false)
 
   const continueAsLastUsed = async (account: LastUsedAccount) => {
+    if (account.provider && account.provider !== 'email') {
+      throw new Error('OAuth accounts require interactive sign-in. Please use Google Sign-In.')
+    }
+
     setIsLoading(true)
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: account.email,
-        password: '',
+        password: account.password || '',
       })
 
       if (error) {

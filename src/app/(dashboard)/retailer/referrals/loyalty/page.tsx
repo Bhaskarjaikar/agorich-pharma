@@ -165,7 +165,7 @@ export default function LoyaltyPage() {
       case 'platinum':
         return <Crown className="w-6 h-6 text-purple-500" />
       default:
-        return <Star className="w-6 h-6 text-slate-400" />
+        return <Star className="w-6 h-6 text-muted-foreground" />
     }
   }
 
@@ -288,7 +288,7 @@ export default function LoyaltyPage() {
                   <div className="p-4 bg-white/5 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white/70 text-sm">Points Balance</span>
-                      <Gift className="w-5 h-5 text-slate-400" />
+                      <Gift className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <p className="text-white text-2xl font-bold">{loyaltyData.pointsBalance.toLocaleString()}</p>
                   </div>
@@ -472,7 +472,7 @@ export default function LoyaltyPage() {
                         <Button
                           size="sm"
                           disabled={!option.available || loyaltyData.pointsBalance < option.points}
-                          className="bg-slate-700 hover:bg-slate-600 text-white"
+                          className="bg-card hover:bg-slate-600 text-white"
                         >
                           Redeem
                         </Button>
@@ -507,8 +507,8 @@ export default function LoyaltyPage() {
                     transition={{ delay: 0.1 * index }}
                     className={`p-4 rounded-lg border ${
                       loyaltyData.currentTier.level === tier
-                        ? 'bg-slate-800 border-slate-600'
-                        : 'bg-slate-900 border-slate-700'
+                        ? 'bg-background border-slate-600'
+                        : 'bg-slate-900 border-border'
                     }`}
                   >
                     <div className="text-center mb-4">
@@ -518,7 +518,7 @@ export default function LoyaltyPage() {
                         {tier === 'platinum' ? '50,000+ points' : `Up to ${config.maxPoints.toLocaleString()} points`}
                       </p>
                       {loyaltyData.currentTier.level === tier && (
-                        <Badge className="bg-slate-700 text-slate-200 border-slate-600 mt-2">
+                        <Badge className="bg-card text-slate-200 border-slate-600 mt-2">
                           Current Tier
                         </Badge>
                       )}

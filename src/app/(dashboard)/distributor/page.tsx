@@ -22,7 +22,8 @@ import {
   Sun,
   Moon,
   CreditCard,
-  Calendar
+  Calendar,
+  Truck
 } from '@phosphor-icons/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,7 @@ import { useTranslation } from 'react-i18next'
 import Protected from '@/components/Protected'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { useAppNotifications } from '@/hooks/useAppNotifications'
+import { ExpandableText } from '@/components/ui/expandable-text'
 
 interface DashboardInvoiceItem {
   product_name?: string | null
@@ -477,7 +479,7 @@ export default function DistributorDashboard() {
               <Button
                 onClick={() => {
                   setShowOnboardingReminder(false)
-                  router.push('/onboarding')
+                  router.push('/onboarding/distributor')
                 }}
               >
                 Go to Onboarding
@@ -563,7 +565,11 @@ export default function DistributorDashboard() {
                     }`} />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-card-foreground">{notification.title}</p>
-                      <p className="text-sm text-card-foreground">{notification.message}</p>
+                      <ExpandableText 
+                        text={notification.message} 
+                        maxLength={120}
+                        className="text-card-foreground"
+                      />
                       <p className="text-xs mt-1 text-muted-foreground">
                         {new Date(notification.created_at).toLocaleString('en-IN')}
                       </p>
@@ -595,15 +601,26 @@ export default function DistributorDashboard() {
       )}
 
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-40 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-card/95 backdrop-blur-xl border-b sticky top-0 z-40 shadow-sm transition-all duration-300">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="flex justify-between items-center h-16">
             {/* Left side - User Profile */}
             <div 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+              className="flex items-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => router.push('/distributor/settings')}
             >
-              <span className="text-lg md:text-xl font-semibold text-foreground">
+              <div className="hidden sm:flex items-center gap-2">
+                <Image
+                  src="/agorich-logo.png"
+                  alt="Agorich"
+                  width={28}
+                  height={28}
+                  className="w-7 h-7 object-contain"
+                />
+                <span className="text-sm font-semibold text-foreground">Agorich</span>
+              </div>
+              <div className="h-6 w-px bg-border hidden sm:block" />
+              <span className="text-lg font-semibold text-foreground">
                 {userName?.split(' ')[0] || 'User'}
               </span>
               {displayPhoto ? (
@@ -612,17 +629,17 @@ export default function DistributorDashboard() {
                   alt="Profile"
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-full object-cover border-2 border-slate-300"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-border"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-semibold text-white border-2 border-slate-300">
+                <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-sm font-semibold text-white border-2 border-border">
                   {userName?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
             </div>
             
             {/* Right side buttons */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               {/* Dark Mode Toggle */}
               <Button
                 variant="outline"
@@ -637,12 +654,12 @@ export default function DistributorDashboard() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className={`${darkMode ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700' : 'border-slate-200 text-slate-700 hover:bg-slate-50'} relative`}
+                className="bg-background border-border text-muted-foreground hover:bg-muted hover:text-foreground relative"
                 onClick={() => setShowNotifications(!showNotifications)}
               >
                 <Bell className="w-4 h-4" weight="fill" />
                 {unreadCount > 0 && (
-                  <Badge className="ml-2 bg-red-500 text-white text-xs">
+                  <Badge className="ml-2 bg-destructive text-destructive-foreground text-xs">
                     {unreadCount}
                   </Badge>
                 )}
@@ -776,6 +793,18 @@ export default function DistributorDashboard() {
                   <Package className="w-5 h-5 mr-3" weight="fill" />
                   {t('dashboard.distributor.menu.createInvoice')}
                 </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start h-11 text-sm font-medium transition-all"
+                  onClick={() => {
+                    setSidebarOpen(false)
+                    router.push('/distributor/inventory')
+                  }}
+                >
+                  <Package className="w-5 h-5 mr-3" weight="fill" />
+                  {t('dashboard.distributor.menu.inventory')}
+                </Button>
               </nav>
             </div>
 
@@ -818,42 +847,53 @@ export default function DistributorDashboard() {
         </>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content - Centered & Contained */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 lg:py-8">
         {/* Quick Actions - Sticky Navigation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="sticky top-16 z-30 -mx-4 sm:mx-0 mb-6"
+          className="mb-6"
         >
-          <div className="flex flex-row gap-2 sm:gap-3 p-2 sm:p-3 rounded-3xl shadow-2xl backdrop-blur-xl border-2 overflow-x-auto bg-card/95 border-border/80">
-            {/* Dashboard - Active (Enhanced Glow) */}
+          <div className="flex flex-row gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl shadow-lg backdrop-blur-xl border overflow-x-auto bg-card/95">
+            {/* Dashboard - Active */}
             <Button 
-              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-xl shadow-emerald-500/50 ring-2 ring-emerald-400/60 transition-all duration-300 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white scale-[1.02] hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/60 hover:scale-[1.03]"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-lg ring-2 ring-emerald-400/60 transition-all duration-300 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-400 hover:to-emerald-500 hover:shadow-emerald-500/40"
               onClick={() => router.push('/distributor')}
             >
               <House className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
               <span className="text-sm sm:text-base font-semibold">Dashboard</span>
             </Button>
             
-            {/* Order Now - Inactive (Enhanced) */}
+            {/* Order Now */}
             <Button 
               variant="secondary"
-              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl hover:scale-[1.02]"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
               onClick={() => router.push('/distributor/create-invoice')}
             >
               <Package className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
               <span className="text-sm sm:text-base font-medium">Order Now</span>
             </Button>
             
-            {/* Routed Orders - New */}
+            {/* Routed Orders */}
             <Button 
               variant="secondary"
-              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl hover:scale-[1.02]"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
               onClick={() => router.push('/distributor/routed-orders')}
             >
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
               <span className="text-sm sm:text-base font-medium">Routed Orders</span>
+            </Button>
+            
+            {/* Logistics Partners - New */}
+            <Button
+              variant="secondary"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
+              onClick={() => router.push('/distributor/logistics')}
+            >
+              <Truck className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
+              <span className="text-sm sm:text-base font-medium">Logistics</span>
             </Button>
             
             {/* Payables - New */}
@@ -884,6 +924,16 @@ export default function DistributorDashboard() {
             >
               <FileText className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
               <span className="text-sm sm:text-base font-medium">Invoices</span>
+            </Button>
+            
+            {/* My Products - New */}
+            <Button 
+              variant="secondary"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl hover:scale-[1.02]"
+              onClick={() => router.push('/distributor/inventory')}
+            >
+              <Package className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
+              <span className="text-sm sm:text-base font-medium">My Products</span>
             </Button>
           </div>
         </motion.div>
@@ -1236,7 +1286,11 @@ export default function DistributorDashboard() {
                           !notification.is_read ? 'bg-amber-500' : 'bg-muted-foreground/50'
                         }`} />
                         <div className="flex-1">
-                          <p className="text-sm text-foreground">{notification.message}</p>
+                          <ExpandableText 
+                            text={notification.message} 
+                            maxLength={100}
+                            className="text-foreground"
+                          />
                           <p className="text-xs mt-1 text-muted-foreground">{notification.created_at}</p>
                         </div>
                       </div>

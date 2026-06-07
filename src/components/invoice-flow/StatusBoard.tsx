@@ -26,7 +26,7 @@ const statusConfig = [
     key: 'DRAFT',
     label: 'Draft',
     icon: '📝',
-    bgClass: 'bg-slate-200 dark:bg-slate-700',
+    bgClass: 'bg-slate-200 dark:bg-card',
     borderClass: 'border-slate-300 dark:border-slate-600',
     textClass: 'text-slate-700 dark:text-white'
   },

@@ -184,9 +184,9 @@ export function DirectRazorpayButton({
             const toast = document.createElement('div')
             toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse'
             if (isPartial && verifyData.cod_amount > 0) {
-              toast.innerHTML = `Payment successful!<br><small>COD: Rs.${verifyData.cod_amount}</small>`
+              toast.textContent = `Payment successful! COD: Rs.${verifyData.cod_amount}`
             } else {
-              toast.innerHTML = 'Payment successful!'
+              toast.textContent = 'Payment successful!'
             }
             document.body.appendChild(toast)
             setTimeout(() => toast.remove(), 3000)
@@ -240,14 +240,13 @@ export function DirectRazorpayButton({
 
             if (verifyData.success && verifyData.verified) {
               console.log('✅ Payment verified:', verifyData)
-              // Show success toast with partial payment info
               const isPartial = verifyData.is_partial_payment
               const toast = document.createElement('div')
               toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse'
               if (isPartial && verifyData.cod_amount > 0) {
-                toast.innerHTML = `✅ ₹${amount} paid online!<br><small>COD: ₹${verifyData.cod_amount}</small>`
+                toast.textContent = `Payment successful! Rs.${amount} paid online. COD: Rs.${verifyData.cod_amount}`
               } else {
-                toast.innerHTML = '✅ Payment successful!'
+                toast.textContent = 'Payment successful!'
               }
               document.body.appendChild(toast)
               setTimeout(() => toast.remove(), 3000)

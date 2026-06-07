@@ -38,7 +38,26 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isHydrated, setIsHydrated] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (isHydrated) {
+      try {
+        const cachedProfile = localStorage.getItem('cached_profile')
+        if (cachedProfile) {
+          const parsedProfile = JSON.parse(cachedProfile)
+          setProfile(parsedProfile)
+        }
+      } catch (error) {
+        console.error('Error loading cached profile:', error)
+      }
+    }
+  }, [isHydrated])
 
   // Load user profile from database
   const loadProfile = useCallback(async (userId: string) => {
@@ -79,7 +98,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
             console.warn('Server error loading profile (likely RLS policy issue):', error)
           }
           // For empty errors and not found errors, don't log anything
-          setProfile(null)
+          // But keep the cached profile if available
           return
         }
 
@@ -92,15 +111,19 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
           // If error exists but has no code/message, treat as empty
           console.debug('Empty error object received while loading profile')
         }
-        setProfile(null)
+        // Don't set profile to null - keep cached version
         return
       }
 
       // Set profile if data exists
       if (data) {
         setProfile(data)
-      } else {
-        setProfile(null)
+        // Save to localStorage
+        try {
+          localStorage.setItem('cached_profile', JSON.stringify(data))
+        } catch (storageError) {
+          console.error('Error saving profile to localStorage:', storageError)
+        }
       }
     } catch (err: unknown) {
       const error = err as SupabaseErrorLike
@@ -124,7 +147,7 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
           console.error(`Error in loadProfile: code=${code ?? 'unknown'} message=${message ?? 'unknown'}`)
         }
       }
-      setProfile(null)
+      // Don't set profile to null - keep cached version
     }
   }, [])
 
@@ -139,11 +162,20 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     let mounted = true
     let authSubscription: { unsubscribe: () => void } | null = null
 
+    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          setTimeout(() => reject(new Error('AUTH_TIMEOUT')), ms)
+        }),
+      ])
+    }
+
     // Initialize auth state
     const initializeAuth = async () => {
       try {
         // Get initial session
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session: initialSession }, error: sessionError } = await withTimeout(supabase.auth.getSession(), 4000)
 
         if (!mounted) return
 
@@ -214,6 +246,20 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
 
         authSubscription = subscription
       } catch (error) {
+        if ((error as Error | undefined)?.message === 'AUTH_TIMEOUT') {
+          try {
+            await supabase.auth.signOut({ scope: 'local' })
+          } catch {}
+          if (mounted) {
+            setUser(null)
+            setSession(null)
+            setProfile(null)
+            setLoading(false)
+          }
+          router.replace('/login?error=session_failed')
+          return
+        }
+
         console.error('Error initializing auth:', error)
         if (mounted) {
           setLoading(false)
@@ -345,4 +391,3 @@ export function useSupabaseAuth(): UseSupabaseAuthReturn {
     refreshProfile,
   }
 }
-

@@ -125,22 +125,38 @@ export async function POST(request: NextRequest) {
           })
         }
       } else {
-        await supabase.from('notifications').insert({
-          type: 'INFO',
-          category: 'SYSTEM',
-          title,
-          message,
-          link: click_action,
-          created_for_role: null,
-          metadata: {
-            image,
-            target_roles,
-            target_user_ids,
-            actions,
-            sentCount,
-            failedCount,
-          },
-        })
+        // Broadcast to all users - get all distinct roles
+        const { data: distinctRoles } = await supabase
+          .from('profiles')
+          .select('role')
+          .not('role', 'is', null)
+          .not('role', 'eq', '')
+        
+        const roles = [...new Set(distinctRoles?.map(r => r.role).filter(Boolean) || [])]
+        
+        if (roles.length === 0) {
+          // Fallback to common roles if no roles found in profiles
+          roles.push('RETAILER', 'DISTRIBUTOR', 'SALES', 'LOGISTIC')
+        }
+        
+        for (const role of roles) {
+          await supabase.from('notifications').insert({
+            type: 'INFO',
+            category: 'SYSTEM',
+            title,
+            message,
+            link: click_action,
+            created_for_role: role,
+            metadata: {
+              image,
+              target_roles: [], // Empty array means "all roles"
+              target_user_ids,
+              actions,
+              sentCount,
+              failedCount,
+            },
+          })
+        }
       }
     } catch (dbError) {
       console.error('Failed to save notification to DB:', dbError)
@@ -187,9 +203,15 @@ export async function GET(request: NextRequest) {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
+    // Calculate date 7 days ago for TTL
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysAgoISO = sevenDaysAgo.toISOString()
+
     const { data: notifications, error } = await supabase
       .from('notifications')
       .select('*')
+      .gte('created_at', sevenDaysAgoISO)
       .order('created_at', { ascending: false })
       .limit(100)
 

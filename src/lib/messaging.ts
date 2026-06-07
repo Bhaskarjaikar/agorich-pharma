@@ -214,20 +214,83 @@ export async function getFCMToken(): Promise<TokenResult> {
 
     // Step 6: Get VAPID key
     const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+    console.log('🔍 Checking VAPID key from environment...')
+    
     if (!vapidKey) {
-      console.warn('VAPID key not configured')
-      return { success: false, error: 'VAPID key not configured' }
+      console.error('❌ VAPID key not configured in environment variables')
+      console.error('   Please set NEXT_PUBLIC_FIREBASE_VAPID_KEY in .env.local')
+      console.error('   Get it from: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates')
+      return { success: false, error: 'VAPID key not configured. Please check environment variables.' }
     }
 
-    // Step 7: Validate VAPID key format
-    if (!/^[A-Za-z0-9_-]+$/.test(vapidKey)) {
-      console.warn('Invalid VAPID key format')
-      return { success: false, error: 'Invalid VAPID key format' }
+    // Step 7: Validate and format VAPID key
+    if (vapidKey.trim().length === 0) {
+      console.error('❌ VAPID key is empty')
+      return { success: false, error: 'VAPID key is empty' }
+    }
+
+    // Clean and format VAPID key
+    let formattedVapidKey = vapidKey.trim()
+    
+    // Remove any whitespace or newlines
+    formattedVapidKey = formattedVapidKey.replace(/\s+/g, '')
+    
+    // Debug: Log the VAPID key details
+    console.log('🔑 VAPID key details:')
+    console.log('   Length:', formattedVapidKey.length)
+    console.log('   First 10 chars:', formattedVapidKey.substring(0, 10) + '...')
+    console.log('   Last 10 chars:', '...' + formattedVapidKey.substring(formattedVapidKey.length - 10))
+    
+    // Check for common issues
+    if (formattedVapidKey === 'your-vapid-key-here') {
+      console.error('❌ VAPID key is still the placeholder value')
+      console.error('   Please replace "your-vapid-key-here" with your actual VAPID key')
+      return { success: false, error: 'VAPID key is placeholder. Please set actual VAPID key.' }
+    }
+    
+    // Base64 URL encoded strings should be 86-88 characters
+    // Base64 URL pattern: A-Z, a-z, 0-9, -, _, = (for padding)
+    // Note: + and / are replaced with - and _ in Base64 URL encoding
+    const base64UrlPattern = /^[A-Za-z0-9_-]+=*$/
+    
+    if (!base64UrlPattern.test(formattedVapidKey)) {
+      console.error('❌ VAPID key contains invalid characters')
+      console.error('   Valid characters: A-Z, a-z, 0-9, -, _, =')
+      console.error('   Key preview:', formattedVapidKey.substring(0, 30) + '...')
+      return { success: false, error: 'VAPID key contains invalid characters. Must be Base64 URL encoded.' }
+    }
+    
+    // Check length - typical VAPID keys are 86-88 chars
+    if (formattedVapidKey.length < 80 || formattedVapidKey.length > 100) {
+      console.warn('⚠️ VAPID key length unusual:', formattedVapidKey.length)
+      console.warn('   Typical length is 86-88 characters')
+    }
+    
+    // Additional validation: Try to decode the Base64 URL string
+    try {
+      // Convert Base64 URL to standard Base64
+      let standardBase64 = formattedVapidKey.replace(/-/g, '+').replace(/_/g, '/')
+      // Add padding if needed
+      while (standardBase64.length % 4) {
+        standardBase64 += '='
+      }
+      
+      // Try to decode to verify it's valid Base64 (browser-compatible)
+      const binaryString = atob(standardBase64)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      console.log('✅ VAPID key is valid Base64 URL encoded')
+      console.log('   Decoded length:', bytes.length, 'bytes')
+    } catch (error) {
+      console.error('❌ VAPID key is not valid Base64:', error)
+      return { success: false, error: 'VAPID key is not valid Base64 URL encoded.' }
     }
 
     // Step 8: Get FCM token with proper configuration
     const token = await getToken(result.messaging, {
-      vapidKey: vapidKey,
+      vapidKey: formattedVapidKey,
       serviceWorkerRegistration: swRegistration,
     })
 

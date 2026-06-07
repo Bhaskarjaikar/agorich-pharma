@@ -96,6 +96,47 @@ export async function PATCH(
       return NextResponse.json({ error: 'At least one item is required' }, { status: 400 })
     }
 
+    // Validate each item strictly
+    for (const item of items) {
+      if (!item.product_name || item.product_name.trim() === '') {
+        return NextResponse.json(
+          { error: 'Product name is required for all items' },
+          { status: 400 }
+        )
+      }
+
+      const quantity = Number(item.quantity)
+      const ratePerUnit = Number(item.rate_per_unit)
+
+      if (isNaN(quantity) || quantity <= 0) {
+        return NextResponse.json(
+          { error: `Invalid quantity for ${item.product_name}: must be a positive number` },
+          { status: 400 }
+        )
+      }
+
+      if (!Number.isInteger(quantity)) {
+        return NextResponse.json(
+          { error: `Invalid quantity for ${item.product_name}: must be a whole number` },
+          { status: 400 }
+        )
+      }
+
+      if (quantity > 1000000) {
+        return NextResponse.json(
+          { error: `Invalid quantity for ${item.product_name}: exceeds maximum allowed (1,000,000)` },
+          { status: 400 }
+        )
+      }
+
+      if (isNaN(ratePerUnit) || ratePerUnit < 0) {
+        return NextResponse.json(
+          { error: `Invalid rate for ${item.product_name}: must be a non-negative number` },
+          { status: 400 }
+        )
+      }
+    }
+
     const { data: existingInvoice, error: fetchError } = await supabase
       .from('invoices')
       .select('id, user_id')
@@ -522,12 +563,8 @@ export async function GET(
       console.log('✅ Customer data available:', {
         user_name: customerData.user_name,
         business_name: customerData.business_name,
-        business_type: customerData.business_type,
-        phone: customerData.phone,
-        gst_number: customerData.gst_number,
-        pan_number: customerData.pan_number,
-        aadhar_number: customerData.aadhar_number,
-        allFields: Object.keys(customerData)
+        hasGst: !!customerData.gst_number,
+        hasPhone: !!customerData.phone
       })
     } else {
       console.warn('⚠️ No customer profile data found for invoice:', {

@@ -1,537 +1,503 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import crypto from 'crypto'
-import { generateInvoiceNumber } from '@/lib/invoice-sequence'
-import { determineGSTType, getPlaceOfSupply } from '@/lib/gst-utils'
-import { logInvoiceGenerated } from '@/lib/audit-logger'
-import {
-  writePaymentToCanonicalLedger,
-  normalizePaymentMethod,
-  normalizePaymentStatus,
-  normalizePaymentType
-} from '@/lib/payment-ledger'
+import { createServerClient } from '@/lib/supabase/server'
+import { AgorichRazorpayEngine } from '@/lib/razorpay/engine'
+import { checkPaymentProcessed, recordPaymentInLedger } from '@/lib/payment-ledger'
+import { deleteCache, buildInventoryCacheKey } from '@/lib/redis'
 
-const isMockMode = process.env.RAZORPAY_MOCK_MODE === 'true'
-const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET
+const PLATFORM_FEE_PERCENT = 5.0
+const SETTLEMENT_HOLD_HOURS = 12
 
-interface OrderRow {
-  id: string
-  order_id: string
-  draft_number: string
-  customer_id: string
-  user_id: string
-  items: any[]
-  grand_total: number
-  order_status: string
-  razorpay_order_id: string | null
-  notes: string | null
+function generateErrorId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-interface InvoiceRow {
-  id: string
-  invoice_no: string | null
-  order_id: string | null
-  status: string
-  grand_total: number | null
-  payment_status: string | null
-}
+const MOCK_MODE = process.env.RAZORPAY_MOCK_MODE === 'true';
 
-// Lazy initialization of Supabase client
-let supabase: ReturnType<typeof createClient> | null = null
-
-function getSupabaseClient() {
-  if (!supabase) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase environment variables are not set')
-    }
-    supabase = createClient(supabaseUrl, supabaseServiceKey)
-  }
-  return supabase
-}
-
-function verifyWebhookSignature(payload: string, signature: string): boolean {
-  if (!webhookSecret) {
-    console.error('⚠️ RAZORPAY_WEBHOOK_SECRET not configured - skipping signature verification')
-    return false
-  }
-
-  const expectedSignature = crypto
-    .createHmac('sha256', webhookSecret)
-    .update(payload)
-    .digest('hex')
-
+async function invalidateInventoryCache(invoiceId: string, supabase: any) {
   try {
-    return crypto.timingSafeEqual(
-      Buffer.from(signature, 'hex'),
-      Buffer.from(expectedSignature, 'hex')
-    )
-  } catch {
-    return false
-  }
-}
-
-/**
- * Generate invoice from order
- * Called when payment is successful and invoice doesn't exist yet
- */
-async function generateInvoiceFromOrder(
-  client: any,
-  order: OrderRow,
-  paymentId: string,
-  paymentMethod: string
-): Promise<{ success: boolean; invoice?: any; error?: string }> {
-  try {
-    // Fetch customer details
-    const { data: customer, error: customerError } = await client
-      .from('profiles')
-      .select('id, user_name, business_name, gst_number, state, address, city, pincode, phone')
-      .eq('id', order.customer_id)
-      .single()
-
-    if (customerError || !customer) {
-      return { success: false, error: 'Customer not found' }
-    }
-
-    // Determine GST type and place of supply
-    const gstType = determineGSTType(customer.gst_number)
-    const placeOfSupply = getPlaceOfSupply(customer.state || 'Bihar')
-
-    // Generate sequential invoice number with locking
-    let invoiceNo: string
-    try {
-      const result = await generateInvoiceNumber(client)
-      invoiceNo = result.invoiceNo
-      console.log(`✅ Generated invoice number: ${invoiceNo}`)
-    } catch (err) {
-      return { success: false, error: 'Failed to generate invoice number' }
-    }
-
-    // Calculate SGST/CGST/IGST based on place of supply
-    const isIntraState = placeOfSupply.toLowerCase() === 'bihar'
-    let sgstAmount = 0
-    let cgstAmount = 0
-    let igstAmount = 0
-    let totalGST = 0
-    let subtotal = 0
-
-    order.items.forEach((item: any) => {
-      subtotal += item.amount_before_tax || 0
-      totalGST += item.gst_amount || 0
-      if (isIntraState) {
-        sgstAmount += (item.gst_amount || 0) / 2
-        cgstAmount += (item.gst_amount || 0) / 2
-      } else {
-        igstAmount += item.gst_amount || 0
-      }
-    })
-
-    // Get current date for invoice
-    const today = new Date().toISOString().split('T')[0]
-    const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
-    // Create invoice
-    const { data: invoice, error: invoiceError } = await client
+    const { data: invoice } = await supabase
       .from('invoices')
-      .insert({
-        invoice_number: invoiceNo,
-        order_id: order.id,
-        customer_id: order.customer_id,
-        user_id: order.user_id,
-        invoice_date: today,
-        due_date: dueDate,
-        status: 'PAID',
-        payment_amount: order.grand_total,
-        grand_total: order.grand_total,
-        subtotal: parseFloat(subtotal.toFixed(2)),
-        total_gst: parseFloat(totalGST.toFixed(2)),
-        payment_method: paymentMethod?.toUpperCase() || 'RAZORPAY',
-        payment_transaction_id: paymentId,
-        paid_at: new Date().toISOString(),
-        notes: order.notes || null
-      })
-      .select()
+      .select('distributor_id')
+      .eq('id', invoiceId)
       .single()
 
-    if (invoiceError) {
-      return { success: false, error: `Failed to create invoice: ${invoiceError.message}` }
+    if (invoice?.distributor_id) {
+      const cacheKey = buildInventoryCacheKey(invoice.distributor_id)
+      await deleteCache(cacheKey)
     }
+  } catch (error) {
+    console.error('Cache invalidation error:', error)
+  }
+}
 
-    // Create invoice items
-    const invoiceItems = order.items.map((item: any) => ({
-      invoice_id: invoice.id,
-      product_id: item.product_id || null,
+async function processPaymentWithLedger(
+  supabase: any,
+  orderId: string,
+  invoiceId: string | null,
+  amountPaise: bigint
+) {
+  const { error: rpcError } = await supabase.rpc('process_invoice_payment_ledger', {
+    p_invoice_id: invoiceId,
+    p_razorpay_payment_id: orderId,
+    p_gross_amount_paise: Number(amountPaise),
+    p_platform_fee_percent: PLATFORM_FEE_PERCENT
+  })
+
+  if (rpcError) {
+    console.error('Ledger processing error:', rpcError)
+    throw new Error('Failed to record financial ledger entries')
+  }
+}
+
+async function createMarketIntelligenceLog(
+  supabase: any,
+  invoiceId: string,
+  distributorId: string,
+  retailerId: string,
+  retailerLat: number | null,
+  retailerLng: number | null
+) {
+  try {
+    const { data: invoiceItems } = await supabase
+      .from('invoice_items')
+      .select(`
+        product_id,
+        product_name,
+        hsn_code,
+        quantity,
+        rate_per_unit,
+        amount_before_tax,
+        gst_amount,
+        total_with_tax,
+        pack_size,
+        manufacturer,
+        expiry_date
+      `)
+      .eq('invoice_id', invoiceId)
+
+    if (!invoiceItems || invoiceItems.length === 0) return
+
+    type DistributorProfile = { store_lat: number | null; store_lng: number | null };
+    const { data: distributor } = await supabase
+      .from('profiles')
+      .select('store_lat, store_lng')
+      .eq('user_id', distributorId)
+      .single() as { data: DistributorProfile | null };
+
+    type InvoiceItemType = {
+      product_id: string | null;
+      product_name: string | null;
+      hsn_code: string | null;
+      quantity: number | null;
+      rate_per_unit: number | null;
+      amount_before_tax: number | null;
+      gst_amount: number | null;
+      total_with_tax: number | null;
+      pack_size: string | null;
+      manufacturer: string | null;
+      expiry_date: string | null;
+    };
+
+    const intelligenceLogs = (invoiceItems as InvoiceItemType[]).map((item: InvoiceItemType) => ({
+      invoice_id: invoiceId,
+      product_id: item.product_id,
       product_name: item.product_name,
-      hsn_code: item.hsn_code || '3004',
+      composition: null,
+      hsn_code: item.hsn_code,
+      pack_size: item.pack_size,
       quantity: item.quantity,
-      unit: item.unit,
-      rate_per_unit: item.rate_per_unit,
-      gst_percentage: item.gst_percentage || 5,
-      amount_before_tax: item.amount_before_tax,
+      unit_price: item.rate_per_unit,
+      total_amount: item.total_with_tax || item.amount_before_tax,
       gst_amount: item.gst_amount,
-      total_with_tax: item.total_with_tax,
-      pack_size: item.pack_size || null,
-      batch_number: item.batch_number || null,
-      expiry_date: item.expiry_date || null,
-      mfg_date: item.mfg_date || null,
-      mrp: item.mrp || null,
-      manufacturer: item.manufacturer || null
+      retailer_lat: retailerLat,
+      retailer_lng: retailerLng,
+      distributor_lat: distributor?.store_lat || null,
+      distributor_lng: distributor?.store_lng || null,
+      distributor_id: distributorId,
+      retailer_id: retailerId,
+      order_date: new Date().toISOString().split('T')[0],
+      payment_date: new Date().toISOString().split('T')[0]
     }))
 
-    const { error: itemsError } = await client
-      .from('invoice_items')
-      .insert(invoiceItems)
+    const { error: logError } = await supabase
+      .from('market_intelligence_logs')
+      .insert(intelligenceLogs)
 
-    if (itemsError) {
-      console.error('⚠️ Error creating invoice items:', itemsError)
+    if (logError) {
+      console.error('Market intelligence logging error:', logError)
     }
-
-    // Update order status to CONFIRMED and link to invoice
-    await client
-      .from('orders')
-      .update({
-        order_status: 'CONFIRMED',
-        invoice_id: invoice.id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', order.id)
-
-    // Log audit entry
-    try {
-      await logInvoiceGenerated(
-        client,
-        invoice.id,
-        {
-          invoice_no: invoiceNo,
-          order_id: order.id,
-          customer_id: order.customer_id,
-          grand_total: order.grand_total,
-          advance_paid: order.grand_total,
-          balance_due: 0,
-          gst_type: gstType,
-          place_of_supply: placeOfSupply
-        },
-        order.user_id,
-        {
-          metadata: {
-            razorpay_payment_id: paymentId,
-            razorpay_order_id: order.razorpay_order_id,
-            webhook: true
-          }
-        }
-      )
-    } catch (auditError) {
-      console.warn('⚠️ Audit logging failed:', auditError)
-    }
-
-    console.log(`🎉 Invoice generated via webhook: ${invoiceNo} for order ${order.id}`)
-    return { success: true, invoice }
-
   } catch (error) {
-    console.error('❌ Error generating invoice:', error)
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+    console.error('Error creating market intelligence log:', error)
   }
 }
 
-/**
- * Handle payment.captured event
- * This is called when payment is successful
- */
-async function handlePaymentCaptured(client: any, payload: any) {
-  // Razorpay webhook payload structure: { event: "payment.captured", payload: { payment: { entity: ... } } }
-  const paymentData = payload.payload?.payment?.entity;
-  if (!paymentData) {
-    console.error('❌ No payment entity in webhook payload:', JSON.stringify(payload, null, 2))
-    return { success: false, error: 'Invalid payload structure' }
-  }
-  
-  const { id: paymentId, order_id: razorpayOrderId, amount, method } = paymentData
-  const amountInRupees = amount / 100
+async function createPendingSettlement(
+  supabase: any,
+  invoiceId: string,
+  paymentId: string | null,
+  distributorId: string,
+  grossAmountPaise: number,
+  gatewayFeePaise: number = 0
+) {
+  try {
+    const grossAmount = grossAmountPaise / 100
+    const gatewayFee = gatewayFeePaise / 100
+    const platformFee = grossAmount * (PLATFORM_FEE_PERCENT / 100)
+    const netPayout = grossAmount - platformFee - gatewayFee
 
-  console.log('💰 Payment captured:', { paymentId, razorpayOrderId, amount, method })
+    const releaseTime = new Date()
+    releaseTime.setHours(releaseTime.getHours() + SETTLEMENT_HOLD_HOURS)
 
-  // Find the order by razorpay_order_id
-  if (!razorpayOrderId) {
-    console.error('❌ No razorpay_order_id in payment data')
-    return { success: false, error: 'No order ID in payment' }
-  }
+    const { data: distributorCredits } = await supabase
+      .from('distributor_credits')
+      .select('total_owed')
+      .eq('distributor_id', distributorId)
+      .single()
 
-  const { data: order, error: orderError } = await client
-    .from('orders')
-    .select('id, order_status, invoice_id, grand_total')
-    .eq('razorpay_order_id', razorpayOrderId)
-    .single()
+    const creditOwed = distributorCredits?.total_owed || 0
+    const creditDeducted = Math.min(creditOwed, netPayout)
+    const finalNetPayout = netPayout - creditDeducted
 
-  if (orderError || !order) {
-    console.log('⚠️ No order found for razorpay_order_id:', razorpayOrderId)
-    return { success: false, error: 'Order not found' }
-  }
-
-  console.log('✅ Found order:', order.id, 'invoice_id:', order.invoice_id, 'for payment:', paymentId)
-
-  // Update the invoice if it exists (which it should, since we created it in /api/orders/create)
-  if (order.invoice_id) {
-    await client
-      .from('invoices')
-      .update({
-        status: 'PAID',
-        payment_amount: amountInRupees,
-        payment_method: method || 'RAZORPAY',
-        payment_transaction_id: paymentId,
-        paid_at: new Date().toISOString()
+    const { error: settlementError } = await supabase
+      .from('pending_settlements')
+      .insert({
+        invoice_id: invoiceId,
+        payment_id: paymentId,
+        distributor_id: distributorId,
+        gross_amount: grossAmount,
+        platform_fee: platformFee,
+        gateway_fee: gatewayFee,
+        credit_deducted: creditDeducted,
+        net_payout: finalNetPayout,
+        release_time: releaseTime.toISOString(),
+        status: 'PENDING'
       })
-      .eq('id', order.invoice_id)
 
-    // Update order status
-    await client
-      .from('orders')
-      .update({
-        order_status: 'CONFIRMED',
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', order.id)
-
-    // ============================================
-    // DUAL-WRITE: Write to canonical payment ledger
-    // ============================================
-    const canonicalResult = await writePaymentToCanonicalLedger(client, {
-      invoice_id: order.invoice_id,
-      order_id: null,
-      amount: amountInRupees,
-      payment_method: normalizePaymentMethod(method || 'RAZORPAY'),
-      transaction_id: paymentId,
-      razorpay_payment_id: paymentId,
-      razorpay_order_id: razorpayOrderId,
-      status: normalizePaymentStatus('SUCCESS'),
-      payment_type: normalizePaymentType('FULL', amountInRupees, order.grand_total),
-      recorded_by: null,
-      metadata: { source: 'payments_webhook_route', original_table: 'invoices' }
-    })
-
-    if (!canonicalResult.success) {
-      console.warn('⚠️ Failed to write to canonical payment ledger (continuing anyway):', canonicalResult.error)
+    if (settlementError) {
+      console.error('Pending settlement creation error:', settlementError)
+      return
     }
 
-    console.log('✅ Invoice updated to PAID:', order.invoice_id)
-    return { success: true, message: 'Invoice updated to PAID', invoice_id: order.invoice_id }
-  } else {
-    // If no invoice exists, create it (fallback)
-    console.log('⚠️ No invoice found, generating one now...')
-    const fullOrder = await client.from('orders').select('*').eq('id', order.id).single()
-    const result = await generateInvoiceFromOrder(client, fullOrder.data, paymentId, method || 'RAZORPAY')
-    return result
+    if (creditDeducted > 0) {
+      const newCreditOwed = creditOwed - creditDeducted
+      await supabase
+        .from('distributor_credits')
+        .update({
+          total_owed: newCreditOwed,
+          last_adjustment_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('distributor_id', distributorId)
+
+      await supabase
+        .from('credit_adjustment_logs')
+        .insert({
+          distributor_id: distributorId,
+          adjustment_type: 'SETTLEMENT',
+          amount: creditDeducted,
+          reference_id: invoiceId,
+          reference_type: 'INVOICE',
+          notes: `Auto-deducted from settlement for invoice ${invoiceId}`
+        })
+    }
+  } catch (error) {
+    console.error('Error creating pending settlement:', error)
   }
 }
 
-/**
- * Handle payment.failed event
- */
-async function handlePaymentFailed(client: any, payload: any) {
-  // Razorpay webhook payload structure: { event: "payment.failed", payload: { payment: { entity: ... } } }
-  const paymentData = payload.payload?.payment?.entity;
-  if (!paymentData) {
-    console.error('❌ No payment entity in webhook payload:', JSON.stringify(payload, null, 2))
-    return { success: false, error: 'Invalid payload structure' }
-  }
-  
-  const { id: paymentId, order_id: razorpayOrderId, error_code, error_description } = paymentData
-
-  console.log('❌ Payment failed:', { paymentId, razorpayOrderId, error_code, error_description })
-
-  if (!razorpayOrderId) {
-    return { success: false, error: 'No order ID in payment' }
-  }
-
-  // Find the order
-  const { data: order, error: orderError } = await client
-    .from('orders')
-    .select('id, order_status, invoice_id')
-    .eq('razorpay_order_id', razorpayOrderId)
-    .single()
-
-  if (orderError || !order) {
-    console.log('⚠️ No order found for razorpay_order_id:', razorpayOrderId)
-    return { success: false, error: 'Order not found' }
-  }
-
-  // Update order status
-  await client
-    .from('orders')
-    .update({
-      order_status: 'PAYMENT_FAILED',
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', order.id)
-
-  // If invoice exists, update it too
-  if (order.invoice_id) {
-    await client
-      .from('invoices')
-      .update({
-        status: 'DRAFT',
-        payment_status: 'PENDING',
-        payment_error_code: error_code,
-        payment_error_message: error_description
-      })
-      .eq('id', order.invoice_id)
-  }
-
-  console.log('✅ Order marked as PAYMENT_FAILED:', order.id)
-  return { success: true, order_id: order.id }
-}
-
-/**
- * Handle refund events
- */
-async function handleRefundEvent(
-  client: any,
-  payload: any,
-  eventType: 'refund.created' | 'refund.processed' | 'refund.failed'
-) {
-  // Razorpay webhook payload structure for refunds: { event: "refund.processed", payload: { refund: { entity: ... } } }
-  const refundData = payload.payload?.refund?.entity;
-  if (!refundData) {
-    console.error('❌ No refund entity in webhook payload:', JSON.stringify(payload, null, 2))
-    return { success: false, error: 'Invalid payload structure' }
-  }
-  const { id: refundId, payment_id: paymentId, amount, status, speed_processed } = refundData
-
-  console.log(`💸 Refund event ${eventType}:`, { refundId, paymentId, amount, status })
-
-  // Find invoice by payment transaction ID
-  const { data: invoice, error: invoiceError } = await client
-    .from('invoices')
-    .select('id, status, grand_total')
-    .eq('payment_transaction_id', paymentId)
-    .single()
-
-  if (invoiceError || !invoice) {
-    console.log('⚠️ No invoice found for payment:', paymentId)
-    return { success: false, error: 'Invoice not found' }
-  }
-
-  const amountInRupees = amount / 100
-  const updateData: any = {
-    refund_id: refundId,
-    refund_amount: amountInRupees,
-    refund_status: status?.toUpperCase() || eventType.replace('refund.', '').toUpperCase(),
-    refund_initiated_at: new Date().toISOString()
-  }
-
-  if (eventType === 'refund.processed') {
-    updateData.refund_processed_at = new Date().toISOString()
-    updateData.refund_speed = speed_processed
-    updateData.status = 'REFUNDED'
-  } else if (eventType === 'refund.failed') {
-    updateData.refund_failed_at = new Date().toISOString()
-  }
-
-  await client
-    .from('invoices')
-    .update(updateData)
-    .eq('id', invoice.id)
-
-  console.log(`✅ Invoice ${invoice.id} updated for refund event: ${eventType}`)
-  return { success: true, invoice_id: invoice.id }
-}
-
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authHeader = request.headers.get('authorization')
-  const expectedToken = process.env.PAYMENT_LOGS_API_KEY
-
-  if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  return NextResponse.json({
-    message: 'Razorpay Payment Webhook is running',
-    mode: isMockMode ? 'MOCK' : 'LIVE',
-    timestamp: new Date().toISOString()
-  })
-}
-
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  const startTime = Date.now()
+export async function POST(request: NextRequest) {
+  const errorId = generateErrorId();
 
   try {
-    const rawBody = await request.text()
-    const signature = request.headers.get('x-razorpay-signature') || ''
-    const event = request.headers.get('x-razorpay-event') || ''
+    const supabase = await createServerClient();
+    const body = await request.json();
 
-    if (isMockMode) {
-      // Mock mode - webhook signature verification skipped
-    } else {
-      if (!verifyWebhookSignature(rawBody, signature)) {
-        console.error('Invalid webhook signature')
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 400 }
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, status } = body;
+
+    if (!razorpay_order_id) {
+      return NextResponse.json({ success: false, error: 'Missing razorpay_order_id' }, { status: 400 });
+    }
+
+    if (MOCK_MODE) {
+      const { data: order } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          grand_total_paise,
+          invoice_id,
+          retailer_id,
+          distributor_id,
+          profiles_retailer!inner(store_lat, store_lng)
+        `)
+        .eq('razorpay_order_id', razorpay_order_id)
+        .single()
+
+    type OrderProfile = {
+      id: string;
+      grand_total_paise: number;
+      invoice_id: string;
+      retailer_id: string;
+      distributor_id: string;
+      profiles_retailer: { store_lat: number | null; store_lng: number | null } | { store_lat: number | null; store_lng: number | null }[] | null;
+    };
+    const typedOrder = order as (OrderProfile & Record<string, any>) | null;
+
+    const retailerProfile = typedOrder?.profiles_retailer && !Array.isArray(typedOrder.profiles_retailer)
+      ? typedOrder.profiles_retailer
+      : (Array.isArray(typedOrder?.profiles_retailer) ? typedOrder?.profiles_retailer[0] : null);
+    const retailerLat = retailerProfile?.store_lat || null;
+    const retailerLng = retailerProfile?.store_lng || null;
+
+    if (typedOrder?.invoice_id) {
+      await processPaymentWithLedger(
+        supabase,
+        razorpay_order_id,
+        typedOrder.invoice_id,
+        typedOrder.grand_total_paise
+      )
+
+      if (typedOrder.distributor_id) {
+        await createMarketIntelligenceLog(
+          supabase,
+          typedOrder.invoice_id,
+          typedOrder.distributor_id,
+          typedOrder.retailer_id,
+          retailerLat,
+          retailerLng
         )
+
+        await createPendingSettlement(
+            supabase,
+            typedOrder.invoice_id,
+            razorpay_payment_id || `pay_mock_${Date.now()}`,
+            typedOrder.distributor_id,
+            typedOrder.grand_total_paise
+          )
+        }
+      }
+
+      await supabase
+        .from('orders')
+        .update({
+          payment_status: 'PAID',
+          status: 'PAID',
+          razorpay_payment_id: razorpay_payment_id || `pay_mock_${Date.now()}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('razorpay_order_id', razorpay_order_id);
+
+      return NextResponse.json({ success: true, mockMode: true });
+    }
+
+    if (razorpay_payment_id) {
+      const alreadyProcessed = await checkPaymentProcessed(supabase, razorpay_payment_id);
+      if (alreadyProcessed) {
+        console.log(`Payment ${razorpay_payment_id} already processed, skipping`);
+        return NextResponse.json({ success: true, message: 'Payment already processed' });
       }
     }
 
-    let payload: any
-    try {
-      payload = JSON.parse(rawBody)
-    } catch (parseError) {
-      console.error('Failed to parse webhook payload:', parseError)
-      return NextResponse.json(
-        { error: 'Invalid JSON payload' },
-        { status: 400 }
-      )
+    if (razorpay_signature) {
+      const isValid = await AgorichRazorpayEngine.verifyPaymentSignature(
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      );
+
+      if (!isValid) {
+        console.error(JSON.stringify({ errorId, context: 'signature_verification_failed', razorpay_order_id }));
+        return NextResponse.json({ success: false, error: 'Invalid signature' }, { status: 400 });
+      }
     }
 
-    const client = getSupabaseClient()
-    let result: any = { success: true }
+    const { data: existingPayment } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('razorpay_order_id', razorpay_order_id)
+      .single();
 
-    switch (event) {
-      case 'payment.captured':
-        result = await handlePaymentCaptured(client, payload)
-        break
-      case 'payment.failed':
-        result = await handlePaymentFailed(client, payload)
-        break
-      case 'refund.created':
-        result = await handleRefundEvent(client, payload, 'refund.created')
-        break
-      case 'refund.processed':
-        result = await handleRefundEvent(client, payload, 'refund.processed')
-        break
-      case 'refund.failed':
-        result = await handleRefundEvent(client, payload, 'refund.failed')
-        break
-      case 'order.failed':
-        result = await handlePaymentFailed(client, payload)
-        break
-      case 'payment.authorized':
-        result = await handlePaymentCaptured(client, payload)
-        break
-      default:
-        result = { success: true, message: 'Event ignored' }
+    if (existingPayment) {
+      if (existingPayment.webhook_processed) {
+        return NextResponse.json({ success: true, message: 'Already processed' });
+      }
+
+      const { data: captureResult } = await AgorichRazorpayEngine.capturePayment(razorpay_payment_id);
+
+      if (captureResult?.success) {
+        const { data: order } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            grand_total_paise,
+            invoice_id,
+            retailer_id,
+            distributor_id,
+            profiles_retailer!inner(store_lat, store_lng)
+          `)
+          .eq('razorpay_order_id', razorpay_order_id)
+          .single()
+
+        const retailerLat = order?.profiles_retailer?.store_lat || null
+        const retailerLng = order?.profiles_retailer?.store_lng || null
+
+        if (order?.invoice_id) {
+          await processPaymentWithLedger(
+            supabase,
+            razorpay_order_id,
+            order.invoice_id,
+            order.grand_total_paise
+          )
+
+          await invalidateInventoryCache(order.invoice_id, supabase)
+        }
+
+        if (order?.invoice_id && order?.distributor_id) {
+          await createMarketIntelligenceLog(
+            supabase,
+            order.invoice_id,
+            order.distributor_id,
+            order.retailer_id,
+            retailerLat,
+            retailerLng
+          )
+
+          await createPendingSettlement(
+            supabase,
+            order.invoice_id,
+            razorpay_payment_id,
+            order.distributor_id,
+            order.grand_total_paise
+          )
+        }
+
+        await supabase
+          .from('payments')
+          .update({
+            razorpay_payment_id,
+            payment_status: 'PAID',
+            webhook_processed: true,
+            webhook_received_at: new Date().toISOString(),
+            raw_webhook_payload: body
+          })
+          .eq('id', existingPayment.id);
+
+        await recordPaymentInLedger(supabase, {
+          invoice_id: order?.invoice_id,
+          order_id: order?.id,
+          payment_type: 'FULL',
+          payment_method: 'RAZORPAY',
+          amount: Number(order?.grand_total_paise || 0) / 100,
+          razorpay_payment_id,
+          razorpay_order_id,
+          status: 'VERIFIED'
+        })
+
+        await supabase
+          .from('orders')
+          .update({
+            payment_status: 'PAID',
+            status: 'PAID',
+            razorpay_payment_id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('razorpay_order_id', razorpay_order_id);
+      } else {
+        await supabase
+          .from('payments')
+          .update({
+            payment_status: 'FAILED',
+            webhook_processed: true,
+            webhook_received_at: new Date().toISOString(),
+            raw_webhook_payload: body
+          })
+          .eq('id', existingPayment.id);
+      }
+    } else {
+      const { data: order } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          grand_total_paise,
+          invoice_id,
+          retailer_id,
+          distributor_id,
+          profiles_retailer!inner(store_lat, store_lng)
+        `)
+        .eq('razorpay_order_id', razorpay_order_id)
+        .single();
+
+      const retailerLat = order?.profiles_retailer?.store_lat || null
+      const retailerLng = order?.profiles_retailer?.store_lng || null
+
+      if (order) {
+        await supabase.from('payments').insert({
+          order_id: order.id,
+          razorpay_order_id,
+          razorpay_payment_id,
+          amount_paise: order.grand_total_paise,
+          payment_status: status === 'captured' ? 'PAID' : 'AUTHORIZED',
+          payment_method: body.method || null,
+          idempotency_key: `webhook_${razorpay_order_id}_${Date.now()}`,
+          webhook_processed: true,
+          webhook_received_at: new Date().toISOString(),
+          raw_webhook_payload: body
+        });
+
+        if (status === 'captured' && order.invoice_id) {
+          await processPaymentWithLedger(
+            supabase,
+            razorpay_order_id,
+            order.invoice_id,
+            order.grand_total_paise
+          )
+
+          await invalidateInventoryCache(order.invoice_id, supabase)
+
+          await recordPaymentInLedger(supabase, {
+            invoice_id: order.invoice_id,
+            order_id: order.id,
+            payment_type: 'FULL',
+            payment_method: 'RAZORPAY',
+            amount: Number(order.grand_total_paise) / 100,
+            razorpay_payment_id,
+            razorpay_order_id,
+            status: 'VERIFIED'
+          })
+
+          if (order.distributor_id) {
+            await createMarketIntelligenceLog(
+              supabase,
+              order.invoice_id,
+              order.distributor_id,
+              order.retailer_id,
+              retailerLat,
+              retailerLng
+            )
+
+            await createPendingSettlement(
+              supabase,
+              order.invoice_id,
+              razorpay_payment_id,
+              order.distributor_id,
+              order.grand_total_paise
+            )
+          }
+        }
+      }
     }
 
-    const processingTime = Date.now() - startTime
-
-    return NextResponse.json({
-      success: result.success,
-      event,
-      processing_time_ms: processingTime,
-      ...result
-    })
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error(`❌ Webhook processing error:`, error)
-    console.log(`${'='.repeat(60)}\n`)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Internal server error',
-        message: errorMessage
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error(JSON.stringify({ errorId, context: 'razorpay_webhook_exception', error: String(err) }));
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    success: false,
+    error: 'Use POST for Razorpay webhook'
+  }, { status: 405 });
 }

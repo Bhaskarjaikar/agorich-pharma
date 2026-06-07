@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { verifyRetailerOrAdmin } from '@/lib/api-security'
 import { logBalancePaymentReceived } from '@/lib/audit-logger'
+import {
+  writePaymentToCanonicalLedger,
+  normalizePaymentStatus,
+  normalizePaymentType
+} from '@/lib/payment-ledger/ledger'
 
 interface RecordBalanceBody {
   invoice_id: string
@@ -177,6 +182,32 @@ export async function POST(request: NextRequest): Promise<NextResponse<RecordBal
         { success: false, error: `Failed to record payment: ${paymentError.message}` },
         { status: 500 }
       )
+    }
+
+    // ============================================
+    // DUAL-WRITE: Write to canonical payment ledger
+    // ============================================
+    const canonicalResult = await writePaymentToCanonicalLedger(supabase, {
+      invoice_id: invoice_id,
+      order_id: invoice.order_id || null,
+      amount: amount,
+      payment_method: payment_method as any,
+      transaction_id: `MANUAL-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      razorpay_payment_id: null,
+      razorpay_order_id: null,
+      status: normalizePaymentStatus('SUCCESS'),
+      payment_type: normalizePaymentType('BALANCE', amount, invoice.grand_total),
+      recorded_by: user.id,
+      metadata: { 
+        source: 'payments_record_balance_route', 
+        original_table: 'payment_verifications',
+        payment_id: payment.id,
+        notes: notes || null
+      }
+    })
+
+    if (!canonicalResult.success) {
+      console.warn('⚠️ Failed to write to canonical payment ledger (continuing anyway):', canonicalResult.error)
     }
 
     // Update invoice with new payment status

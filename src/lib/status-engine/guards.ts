@@ -23,7 +23,10 @@ import {
 } from './constants';
 
 export function normalizeStatus(status: string | null | undefined): string {
-  return (status || '').trim().toUpperCase();
+  if (!status || !status.trim()) {
+    return 'UNKNOWN';
+  }
+  return status.trim().toUpperCase();
 }
 
 export function isValidInvoiceStatus(status: string): status is CanonicalInvoiceStatus {

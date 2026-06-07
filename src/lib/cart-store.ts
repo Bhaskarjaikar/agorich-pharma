@@ -5,6 +5,7 @@
  */
 
 const CART_KEY = 'agorich_cart_v1'
+const CART_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
 
 export interface CartEntry {
   productId: string
@@ -20,14 +21,42 @@ export interface CartEntry {
   quantity: number
 }
 
+interface CartWithMeta {
+  items: CartEntry[]
+  createdAt: number
+  expiresAt: number
+}
+
 export function getCart(): CartEntry[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(CART_KEY)
     if (!raw) return []
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed)) return parsed
-    return []
+    const parsed = JSON.parse(raw) as CartWithMeta
+
+    // Check if cart has expiry metadata (legacy carts won't have it)
+    if (!parsed.items || !Array.isArray(parsed.items)) {
+      // Legacy format - convert to new format
+      const legacyItems = Array.isArray(parsed) ? parsed : []
+      if (legacyItems.length > 0) {
+        const cartWithMeta: CartWithMeta = {
+          items: legacyItems,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + CART_EXPIRY_MS
+        }
+        localStorage.setItem(CART_KEY, JSON.stringify(cartWithMeta))
+        return legacyItems
+      }
+      return []
+    }
+
+    // Check expiry
+    if (Date.now() > parsed.expiresAt) {
+      localStorage.removeItem(CART_KEY)
+      return []
+    }
+
+    return parsed.items
   } catch {
     return []
   }
@@ -36,7 +65,12 @@ export function getCart(): CartEntry[] {
 export function setCart(items: CartEntry[]) {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(CART_KEY, JSON.stringify(items))
+    const cartWithMeta: CartWithMeta = {
+      items,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + CART_EXPIRY_MS
+    }
+    localStorage.setItem(CART_KEY, JSON.stringify(cartWithMeta))
   } catch {
     // ignore storage errors
   }

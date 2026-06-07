@@ -62,8 +62,12 @@ export async function writeInventoryToCanonicalLedger(
 export async function getCurrentInventoryBalance(
   supabase: any,
   productId: string
-): Promise<number> {
+): Promise<{ balance: number; error?: string }> {
   try {
+    if (!productId || typeof productId !== 'string') {
+      return { balance: 0, error: 'Invalid product ID' };
+    }
+
     const { data, error } = await supabase
       .from('canonical_inventory_ledger')
       .select('balance_after')
@@ -71,15 +75,24 @@ export async function getCurrentInventoryBalance(
       .order('performed_at', { ascending: false })
       .limit(1);
 
-    if (error || !data || data.length === 0) {
-      console.warn('⚠️ Failed to get inventory balance from canonical ledger, returning 0');
-      return 0;
+    if (error) {
+      console.error('❌ Failed to get inventory balance:', error);
+      return { balance: 0, error: `Database error: ${error.message}` };
     }
 
-    console.log('📦 Current inventory balance for product', productId, ':', data[0].balance_after);
-    return data[0].balance_after;
+    if (!data || data.length === 0) {
+      return { balance: 0, error: `No inventory records found for product ${productId}` };
+    }
+
+    const balance = data[0].balance_after;
+    if (typeof balance !== 'number' || isNaN(balance)) {
+      return { balance: 0, error: 'Invalid balance value in database' };
+    }
+
+    return { balance };
   } catch (err) {
-    console.warn('⚠️ Exception getting inventory balance from canonical ledger:', err);
-    return 0;
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+    console.error('❌ Exception getting inventory balance:', errorMessage);
+    return { balance: 0, error: errorMessage };
   }
 }

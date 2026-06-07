@@ -80,7 +80,7 @@ export async function logAudit(
       metadata: options.metadata || null
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data, error } = await (supabase as any)
       .from('audit_logs')
       .insert(entry)
@@ -379,7 +379,7 @@ export async function getAuditLogsForEntity(
   limit: number = 50
 ): Promise<AuditLogEntry[]> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data, error } = await (supabase as any)
       .from('audit_logs')
       .select('*')

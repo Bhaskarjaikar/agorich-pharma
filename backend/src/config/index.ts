@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -18,5 +18,11 @@ export const config = {
   },
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  },
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID || '',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+    accountId: process.env.RAZORPAY_ACCOUNT_ID || '',
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
 };

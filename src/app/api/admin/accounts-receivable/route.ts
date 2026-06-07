@@ -131,7 +131,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<AccountsRe
     const today = new Date()
 
     // Transform data and calculate days overdue
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const transformedInvoices: AccountsReceivableInvoice[] = (invoices || []).map((invoice: any) => {
       const dueDate = new Date(invoice.due_date)
       const daysOverdue = today > dueDate 

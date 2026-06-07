@@ -2,7 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { verifyDistributor } from '@/lib/api-security'
 
+const DEFAULT_MAX_DAYS = 90
+const MAX_ALLOWED_DAYS = 365
+
+function sanitizeString(input: unknown, maxLength: number): string {
+  if (typeof input !== 'string') return '';
+  const trimmed = input.trim();
+  if (trimmed.length === 0) return '';
+  return trimmed.slice(0, maxLength).replace(/[<>\"\'`;\\]/g, '');
+}
+
+function generateErrorId(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function GET(request: NextRequest) {
+  const errorId = generateErrorId();
+
   try {
     const authResult = await verifyDistributor(request)
     if ('headers' in authResult) {
@@ -21,16 +39,25 @@ export async function GET(request: NextRequest) {
 
     if (!profile) {
       return NextResponse.json(
-        { error: 'Distributor profile not found' },
-        { status: 404 }
+        { success: false, error: 'Distributor profile not found' },
+        { status: 403 }
       )
     }
 
     const { searchParams } = new URL(request.url)
-    const daysFilter = searchParams.get('days')
-    const maxDays = daysFilter ? parseInt(daysFilter) : 90
+    const daysParam = sanitizeString(searchParams.get('days'), 10)
+    let maxDays = DEFAULT_MAX_DAYS
 
-    const futureDate = new Date()
+    if (daysParam) {
+      const parsed = parseInt(daysParam, 10)
+      if (!isNaN(parsed) && parsed > 0) {
+        maxDays = Math.min(parsed, MAX_ALLOWED_DAYS)
+      }
+    }
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const futureDate = new Date(today)
     futureDate.setDate(futureDate.getDate() + maxDays)
 
     const { data: batches, error } = await supabase
@@ -50,20 +77,23 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('distributor_id', profile.id)
-      .gt('expiry_date', new Date().toISOString().split('T')[0])
+      .gt('expiry_date', today.toISOString().split('T')[0])
       .lte('expiry_date', futureDate.toISOString().split('T')[0])
       .order('expiry_date', { ascending: true })
 
     if (error) {
-      console.error('Error fetching expiry watchlist:', error)
+      console.error(JSON.stringify({
+        errorId,
+        context: 'expiry_watchlist_fetch_failed',
+        distributorId: profile.id,
+        maxDays,
+        error: error.message
+      }));
       return NextResponse.json(
-        { error: 'Failed to fetch expiry watchlist' },
+        { success: false, error: 'Failed to fetch expiry watchlist' },
         { status: 500 }
       )
     }
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
 
     const products = (batches || []).map((batch: any) => {
       const expiryDate = new Date(batch.expiry_date)
@@ -73,15 +103,11 @@ export async function GET(request: NextRequest) {
       return {
         id: batch.id,
         product_name: batch.products?.name || 'Unknown Product',
-        batch_number: batch.batch_number,
+        batch_number: batch.batch_number || 'N/A',
         pack_size: batch.products?.pack_size || 'N/A',
-        quantity: batch.available_qty + batch.reserved_qty,
+        quantity: (Number(batch.available_qty) || 0) + (Number(batch.reserved_qty) || 0),
         expiry_date: batch.expiry_date,
-        days_until_expiry: daysUntilExpiry,
-        mrp: batch.products?.mrp || 0,
-        available_qty: batch.available_qty,
-        reserved_qty: batch.reserved_qty,
-        mfg_date: batch.mfg_date
+        days_until_expiry: daysUntilExpiry
       }
     })
 
@@ -91,10 +117,14 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error fetching expiry watchlist:', error)
+    console.error(JSON.stringify({
+      errorId,
+      context: 'expiry_watchlist_crash',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }));
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
-    )
+    );
   }
 }

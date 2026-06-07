@@ -5,3 +5,6 @@ export * from './inventoryService';
 export * from './orderService';
 export * from './invoiceService';
 export * from './dashboardService';
+export * from './paymentService';
+export * from './taxEngine';
+export * from './auditService';

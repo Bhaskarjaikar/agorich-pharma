@@ -105,7 +105,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
   const topDecliners = [...forecasts].filter(f => f.trend === 'DECLINING').slice(0, 5)
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -124,39 +124,39 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
         {loading && !summary ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className={`h-20 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-20 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
           <>
             {summary && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Forecasted</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Forecasted</div>
                   <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.total_products_forecasted}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Growing</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Growing</div>
                   <div className="text-lg font-bold text-green-500">
                     {summary.growing_count}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Declining</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Declining</div>
                   <div className="text-lg font-bold text-red-500">
                     {summary.declining_count}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>High Demand</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>High Demand</div>
                   <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.high_demand_count}
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                  <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Low Demand</div>
+                <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                  <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Low Demand</div>
                   <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     {summary.low_demand_count}
                   </div>
@@ -169,7 +169,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                 value={filterTrend}
                 onChange={(e) => setFilterTrend(e.target.value)}
                 className={`text-sm px-2 py-1 rounded border ${
-                  darkMode ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  darkMode ? 'bg-card border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-900'
                 }`}
               >
                 <option value="all">All Trends</option>
@@ -189,14 +189,14 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                 </div>
                 <div className="space-y-2">
                   {topGrowers.length === 0 ? (
-                    <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                       No growing products detected
                     </div>
                   ) : (
                     topGrowers.map((product) => (
                       <div
                         key={product.product_id}
-                        className={`p-3 rounded-lg border ${darkMode ? 'border-slate-700 bg-slate-700/30' : 'border-slate-200 bg-slate-50'}`}
+                        className={`p-3 rounded-lg border ${darkMode ? 'border-border bg-card/30' : 'border-slate-200 bg-slate-50'}`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -209,10 +209,10 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                               </Badge>
                             </div>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                                 {product.current_daily_avg}/day
                               </span>
-                              <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                                 vs {product.previous_daily_avg}/day
                               </span>
                             </div>
@@ -222,7 +222,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                               <ArrowUp className="w-4 h-4" />
                               <span className="font-bold">+{product.growth_rate}%</span>
                             </div>
-                            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                               30d: {formatNumber(product.forecast_30_days)}
                             </div>
                           </div>
@@ -242,14 +242,14 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                 </div>
                 <div className="space-y-2">
                   {topDecliners.length === 0 ? (
-                    <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                       No declining products detected
                     </div>
                   ) : (
                     topDecliners.map((product) => (
                       <div
                         key={product.product_id}
-                        className={`p-3 rounded-lg border ${darkMode ? 'border-slate-700 bg-slate-700/30' : 'border-slate-200 bg-slate-50'}`}
+                        className={`p-3 rounded-lg border ${darkMode ? 'border-border bg-card/30' : 'border-slate-200 bg-slate-50'}`}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
@@ -262,10 +262,10 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                               </Badge>
                             </div>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                              <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                                 {product.current_daily_avg}/day
                               </span>
-                              <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                              <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                                 vs {product.previous_daily_avg}/day
                               </span>
                             </div>
@@ -275,7 +275,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                               <ArrowDown className="w-4 h-4" />
                               <span className="font-bold">{product.growth_rate}%</span>
                             </div>
-                            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                               30d: {formatNumber(product.forecast_30_days)}
                             </div>
                           </div>
@@ -288,7 +288,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
             </div>
 
             <div>
-              <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-xs font-semibold ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                 ALL PRODUCTS ({filteredForecasts.length})
               </span>
               <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
@@ -296,7 +296,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                   <div
                     key={product.product_id}
                     className={`flex items-center justify-between p-2 rounded ${
-                      darkMode ? 'bg-slate-700/30' : 'bg-slate-50'
+                      darkMode ? 'bg-card/30' : 'bg-slate-50'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -313,7 +313,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                         <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                           {product.product_name}
                         </div>
-                        <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           {product.category || 'Uncategorized'}
                         </div>
                       </div>
@@ -322,7 +322,7 @@ export function DemandForecastPanel({ darkMode = true }: DemandForecastPanelProp
                       <div className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                         {formatNumber(product.forecast_30_days)}
                       </div>
-                      <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                      <div className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                         30d forecast
                       </div>
                     </div>

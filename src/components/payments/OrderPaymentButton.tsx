@@ -195,7 +195,7 @@ export function OrderPaymentButton({
 
         const toast = document.createElement('div')
         toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        toast.innerHTML = `Payment successful!<br><small>Draft: ${draftNumber}</small>`
+        toast.textContent = `Payment successful! Draft: ${draftNumber}`
         document.body.appendChild(toast)
         setTimeout(() => toast.remove(), 4000)
 
@@ -249,7 +249,7 @@ export function OrderPaymentButton({
 
               const toast = document.createElement('div')
               toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-              toast.innerHTML = `✅ Payment successful!<br><small>Invoice will be generated</small>`
+              toast.textContent = 'Payment successful! Invoice will be generated.'
               document.body.appendChild(toast)
               setTimeout(() => toast.remove(), 4000)
 
@@ -264,7 +264,7 @@ export function OrderPaymentButton({
 
             const toast = document.createElement('div')
             toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-            toast.innerHTML = `⚠️ Payment verified but order update failed<br><small>Please contact support with Order ID: ${internalOrderId}</small>`
+            toast.textContent = `Payment verified but order update failed. Please contact support with Order ID: ${internalOrderId}`
             document.body.appendChild(toast)
             setTimeout(() => toast.remove(), 6000)
           }
@@ -295,7 +295,7 @@ export function OrderPaymentButton({
 
             const toast = document.createElement('div')
             toast.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-            toast.innerHTML = `⚠️ Payment cancelled<br><small>Your order is saved. Go to Invoices to retry payment.</small>`
+            toast.textContent = 'Payment cancelled. Your order is saved. Go to Invoices to retry payment.'
             document.body.appendChild(toast)
             setTimeout(() => toast.remove(), 5000)
           }

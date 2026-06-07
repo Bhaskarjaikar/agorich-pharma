@@ -100,7 +100,7 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
   const redZonePercentage = totalBalance > 0 ? Math.round((overdueBalance / totalBalance) * 100) : 0
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
             </Badge>
           )}
         </div>
-        <CardDescription className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+        <CardDescription className={darkMode ? 'text-muted-foreground' : 'text-slate-500'}>
           Total Balance Due: {formatCurrency(totalBalance)}
           {redZonePercentage >= 40 && (
             <span className="ml-2 text-red-500 font-semibold">
@@ -128,7 +128,7 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className={`h-16 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-16 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
@@ -140,7 +140,7 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
                   key={invoice.id}
                   className={`p-4 rounded-lg border ${
                     darkMode 
-                      ? 'border-slate-700 bg-slate-700/50' 
+                      ? 'border-border bg-card/50' 
                       : 'border-slate-200 bg-slate-50'
                   }`}
                 >
@@ -160,11 +160,11 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
                         </Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <span className={darkMode ? 'text-slate-400' : 'text-slate-600'}>
+                        <span className={darkMode ? 'text-muted-foreground' : 'text-slate-600'}>
                           <Clock className="w-3 h-3 inline mr-1" />
                           Due: {formatDate(invoice.due_date)}
                         </span>
-                        <span className={darkMode ? 'text-slate-500' : 'text-slate-400'}>
+                        <span className={darkMode ? 'text-slate-500' : 'text-muted-foreground'}>
                           • Invoice: {formatDate(invoice.invoice_date)}
                         </span>
                       </div>
@@ -181,10 +181,10 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
           </div>
         )}
         
-        <div className="mt-6 pt-4 border-t border-slate-700/50">
+        <div className="mt-6 pt-4 border-t border-border/50">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Total Due</div>
+              <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Total Due</div>
               <div className={`font-bold text-xl ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {formatCurrency(totalBalance)}
               </div>
@@ -196,7 +196,7 @@ export function FinancialHealthCard({ darkMode = true }: { darkMode?: boolean })
               </div>
             </div>
             <div className="text-center">
-              <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Red Zone %</div>
+              <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Red Zone %</div>
               <div className={`font-bold text-xl ${redZonePercentage >= 40 ? 'text-red-600 dark:text-red-400' : darkMode ? 'text-white' : 'text-slate-900'}`}>
                 {redZonePercentage}%
               </div>

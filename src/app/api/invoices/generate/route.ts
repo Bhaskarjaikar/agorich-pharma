@@ -76,11 +76,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<InvoiceRe
       }
     })
 
-    // Fetch the order
+    // Fetch the order by order_number (TEXT identifier)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*')
-      .eq('id', order_id)
+      .eq('order_number', order_id)
       .single()
 
     if (orderError || !order) {
@@ -204,7 +204,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<InvoiceRe
       .from('invoices')
       .insert({
         invoice_no: invoiceNo,
-        order_id: order_id,
+        order_id: order.id,  // UUID foreign key to orders table
         customer_id: order.customer_id,
         user_id: order.user_id,
         invoice_date: today,
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<InvoiceRe
         invoice_id: invoice.id,
         updated_at: new Date().toISOString()
       })
-      .eq('id', order_id)
+      .eq('id', order.id)  // Use order.id (UUID) not order_id (TEXT)
 
     if (updateError) {
       console.error('❌ Error updating order status:', updateError)
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<InvoiceRe
         .from('payment_verifications')
         .update({
           invoice_id: invoice.id,
-          order_id: order_id,
+          order_id: order.id,  // Use order.id (UUID) not order_id (TEXT)
           payment_type: 'FULL',
           cod_amount: 0,
           updated_at: new Date().toISOString()

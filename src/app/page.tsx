@@ -68,10 +68,25 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
   return <span ref={ref}>{displayValue}{suffix}</span>
 }
 
+// AQI Skeleton Loader
+function AQISkeleton() {
+  return (
+    <div className="text-center cursor-default p-4 rounded-xl bg-gradient-to-br from-blue-50/50 to-background dark:from-slate-800 dark:to-background border border-blue-100 dark:border-border animate-pulse">
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <Wind className="w-6 h-6 text-blue-300" weight="fill" />
+      </div>
+      <div className="text-3xl sm:text-4xl font-bold text-blue-300 mb-1">...</div>
+      <div className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-2">AQI - Loading</div>
+      <div className="h-5 w-20 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-lg" />
+    </div>
+  )
+}
+
 // AQI Component
 function AQICard() {
   const [aqi, setAqi] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [location, setLocation] = useState('Delhi')
 
   useEffect(() => {
@@ -79,7 +94,7 @@ function AQICard() {
       try {
         const token = process.env.NEXT_PUBLIC_WAQI_TOKEN
         if (!token) {
-          setAqi(null)
+          setError(true)
           setLoading(false)
           return
         }
@@ -87,10 +102,12 @@ function AQICard() {
         if (response.data.status === 'ok') {
           setAqi(response.data.data.aqi)
           setLocation(response.data.data.city?.name || 'Your City')
+        } else {
+          setError(true)
         }
       } catch (error) {
         console.error('AQI fetch error:', error)
-        setAqi(null)
+        setError(true)
       } finally {
         setLoading(false)
       }
@@ -100,7 +117,6 @@ function AQICard() {
       navigator.geolocation.getCurrentPosition(
         (pos) => fetchAQI(pos.coords.latitude, pos.coords.longitude),
         () => {
-          // Default to Delhi if location denied
           fetchAQI(28.6139, 77.2090)
         }
       )
@@ -110,15 +126,30 @@ function AQICard() {
   }, [])
 
   const getAQIMessage = (value: number) => {
-    if (value > 200) return { text: 'Saans lene mein takleef ho sakti hai', alert: true, color: 'text-red-600' }
-    if (value > 100) return { text: 'Hawa Pradushit hai', alert: true, color: 'text-orange-500' }
-    return { text: 'Hawa saaf hai', alert: false, color: 'text-green-500' }
+    if (value > 200) return { text: 'Saans lene mein takleef ho sakti hai', alert: true, color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' }
+    if (value > 100) return { text: 'Hawa Pradushit hai', alert: true, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-900/20' }
+    return { text: 'Hawa saaf hai', alert: false, color: 'text-green-500', bg: 'bg-green-50 dark:bg-green-900/20' }
   }
 
   const aqiData = aqi ? getAQIMessage(aqi) : null
 
-  if (!loading && aqi === null) {
-    return null
+  if (loading) {
+    return <AQISkeleton />
+  }
+
+  if (error || aqi === null) {
+    return (
+      <div className="text-center cursor-default p-4 rounded-xl bg-gradient-to-br from-blue-50/50 to-background dark:from-slate-800 dark:to-background border border-blue-100 dark:border-border">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Wind className="w-6 h-6 text-blue-400" weight="fill" />
+        </div>
+        <div className="text-2xl sm:text-3xl font-bold text-blue-400 mb-1">--</div>
+        <div className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-2">AQI</div>
+        <div className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-lg">
+          AQI Unavailable
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -128,18 +159,18 @@ function AQICard() {
       viewport={{ once: true }}
       transition={{ delay: 0, duration: 0.6, type: "spring" }}
       whileHover={{ scale: 1.05 }}
-      className="text-center cursor-default p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-gradient-to-br from-blue-50 to-white dark:from-slate-800 dark:to-slate-900 border border-blue-100 dark:border-slate-700"
+      className="text-center cursor-default p-4 rounded-xl hover:bg-muted dark:hover:bg-background transition-colors bg-gradient-to-br from-blue-50/50 to-background dark:from-slate-800 dark:to-background border border-blue-100 dark:border-border"
     >
       <div className="flex items-center justify-center gap-2 mb-2">
         <Wind className="w-6 h-6 text-blue-500" weight="fill" />
         {aqiData?.alert && <Warning className="w-5 h-5 text-red-500 animate-pulse" weight="fill" />}
       </div>
       <div className="text-3xl sm:text-4xl font-bold text-blue-600 dark:text-blue-400 mb-1">
-        {loading ? '...' : aqi}
+        {aqi}
       </div>
-      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">AQI - {location}</div>
+      <div className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-2">AQI - {location}</div>
       {aqiData && (
-        <div className={`text-xs font-medium ${aqiData.color} bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded-lg`}>
+        <div className={`text-xs font-medium ${aqiData.color} ${aqiData.bg} px-2 py-1 rounded-lg`}>
           {aqiData.text}
         </div>
       )}
@@ -147,17 +178,32 @@ function AQICard() {
   )
 }
 
+// Weather Skeleton Loader
+function WeatherSkeleton() {
+  return (
+    <div className="text-center cursor-default p-4 rounded-xl bg-gradient-to-br from-amber-50/50 to-background dark:from-slate-800 dark:to-background border border-amber-100 dark:border-border animate-pulse">
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <Sun className="w-6 h-6 text-amber-300" weight="fill" />
+      </div>
+      <div className="text-3xl sm:text-4xl font-bold text-amber-300 mb-1">--°C</div>
+      <div className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-2">Loading...</div>
+      <div className="h-5 w-24 mx-auto bg-amber-100 dark:bg-amber-900/30 rounded-lg" />
+    </div>
+  )
+}
+
 // Weather Component
 function WeatherCard() {
   const [weather, setWeather] = useState<{temp: number, condition: string} | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
   useEffect(() => {
     const fetchWeather = async (lat: number, lon: number) => {
       try {
         const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY
         if (!apiKey) {
-          setWeather(null)
+          setError(true)
           setLoading(false)
           return
         }
@@ -168,7 +214,7 @@ function WeatherCard() {
         })
       } catch (error) {
         console.error('Weather fetch error:', error)
-        setWeather(null)
+        setError(true)
       } finally {
         setLoading(false)
       }
@@ -192,8 +238,23 @@ function WeatherCard() {
 
   const weatherData = weather ? getWeatherMessage(weather.temp, weather.condition) : null
 
-  if (!loading && weather === null) {
-    return null
+  if (loading) {
+    return <WeatherSkeleton />
+  }
+
+  if (error || weather === null) {
+    return (
+      <div className="text-center cursor-default p-4 rounded-xl bg-gradient-to-br from-amber-50/50 to-background dark:from-slate-800 dark:to-background border border-amber-100 dark:border-border">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Sun className="w-6 h-6 text-amber-400" weight="fill" />
+        </div>
+        <div className="text-2xl sm:text-3xl font-bold text-amber-400 mb-1">--°C</div>
+        <div className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-2">Weather</div>
+        <div className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-lg">
+          Weather Unavailable
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -203,19 +264,19 @@ function WeatherCard() {
       viewport={{ once: true }}
       transition={{ delay: 0.15, duration: 0.6, type: "spring" }}
       whileHover={{ scale: 1.05 }}
-      className="text-center cursor-default p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-gradient-to-br from-amber-50 to-white dark:from-slate-800 dark:to-slate-900 border border-amber-100 dark:border-slate-700"
+      className="text-center cursor-default p-4 rounded-xl hover:bg-muted dark:hover:bg-background transition-colors bg-gradient-to-br from-amber-50/50 to-background dark:from-slate-800 dark:to-background border border-amber-100 dark:border-border"
     >
       <div className="flex items-center justify-center gap-2 mb-2">
         {weatherData?.icon}
       </div>
       <div className="text-3xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400 mb-1">
-        {loading ? '...' : `${weather?.temp}°C`}
+        {weather?.temp}°C
       </div>
-      <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-        {loading ? '...' : weather?.condition}
+      <div className="text-xs sm:text-sm text-muted-foreground uppercase tracking-wide mb-2">
+        {weather?.condition}
       </div>
       {weatherData && (
-        <div className="text-xs font-medium text-amber-600 bg-white/80 dark:bg-slate-800/80 px-2 py-1 rounded-lg">
+        <div className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded-lg">
           {weatherData.text}
         </div>
       )}
@@ -227,6 +288,7 @@ function WeatherCard() {
 function NearbyMedicalCard() {
   const [places, setPlaces] = useState<{name: string, distance: string, type: 'hospital' | 'pharmacy'}[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [location, setLocation] = useState('Your Area')
 
   useEffect(() => {
@@ -312,7 +374,7 @@ function NearbyMedicalCard() {
       viewport={{ once: true }}
       transition={{ delay: 0.3, duration: 0.6, type: "spring" }}
       whileHover={{ scale: 1.02 }}
-      className="text-center cursor-default p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-gradient-to-br from-green-50 to-white dark:from-slate-800 dark:to-slate-900 border border-green-100 dark:border-slate-700"
+      className="text-center cursor-default p-3 rounded-xl hover:bg-muted dark:hover:bg-background transition-colors bg-gradient-to-br from-green-50/50 to-background dark:from-slate-800 dark:to-background border border-green-100 dark:border-border"
     >
       <div className="flex items-center justify-center gap-2 mb-2">
         <MapPin className="w-5 h-5 text-green-500" weight="fill" />
@@ -320,18 +382,28 @@ function NearbyMedicalCard() {
       <div className="text-base font-bold text-green-600 dark:text-green-400 mb-1 truncate px-1">
         {location}
       </div>
-      <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+      <div className="text-xs text-muted-foreground mb-2">
         Nearby Medical
       </div>
       <div className="space-y-1 max-h-[140px] overflow-y-auto">
         {loading ? (
-          <div className="text-xs text-slate-400 py-4">Finding nearby places...</div>
+          <div className="space-y-1">
+            {[1,2,3,4].map((i) => (
+              <div key={i} className="flex items-center justify-between text-xs px-2 py-1.5 bg-card/50 dark:bg-background/50 rounded animate-pulse">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                  <span className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded"></span>
+                </span>
+                <span className="h-3 w-8 bg-slate-200 dark:bg-slate-700 rounded"></span>
+              </div>
+            ))}
+          </div>
         ) : (
           places.map((place, idx) => (
             <button
               key={idx}
               onClick={() => openInMaps(place.name)}
-              className="w-full flex items-center justify-between text-xs px-2 py-1.5 bg-white/80 dark:bg-slate-800/80 rounded hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors text-left"
+              className="w-full flex items-center justify-between text-xs px-2 py-1.5 bg-card/80 dark:bg-background/80 rounded hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors text-left"
             >
               <span className="flex items-center gap-1.5">
                 {place.type === 'pharmacy' ? (
@@ -339,7 +411,7 @@ function NearbyMedicalCard() {
                 ) : (
                   <span className="w-2 h-2 rounded-full bg-red-400"></span>
                 )}
-                <span className="text-slate-700 dark:text-slate-300 truncate max-w-[90px]">{place.name}</span>
+                <span className="text-foreground truncate max-w-[90px]">{place.name}</span>
               </span>
               <span className="text-green-600 font-medium text-[10px]">{place.distance}</span>
             </button>
@@ -379,7 +451,7 @@ function EmergencyHotlineCard() {
       viewport={{ once: true }}
       transition={{ delay: 0.45, duration: 0.6, type: "spring" }}
       whileHover={{ scale: 1.02 }}
-      className="text-center cursor-default p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors bg-gradient-to-br from-red-50 to-white dark:from-slate-800 dark:to-slate-900 border-2 border-red-200 dark:border-red-800 shadow-lg shadow-red-100 dark:shadow-red-900/20"
+      className="text-center cursor-default p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-background transition-colors bg-gradient-to-br from-red-50 to-white dark:from-slate-800 dark:to-slate-900 border-2 border-red-200 dark:border-red-800 shadow-lg shadow-red-100 dark:shadow-red-900/20"
     >
       <div className="flex items-center justify-center gap-2 mb-2">
         <Phone className="w-5 h-5 text-red-500 animate-pulse" weight="fill" />
@@ -444,55 +516,55 @@ function ContactButton() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl relative"
+            className="bg-card dark:bg-card rounded-2xl p-6 max-w-sm w-full shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Contact Us</h3>
-              <button 
-                onClick={handleClose} 
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              <h3 className="text-xl font-bold text-foreground">Contact Us</h3>
+              <button
+                onClick={handleClose}
+                className="p-2 rounded-lg hover:bg-muted dark:hover:bg-muted transition-colors"
                 type="button"
               >
-                <X className="w-5 h-5 text-slate-500" weight="bold" />
+                <X className="w-5 h-5 text-muted-foreground" weight="bold" />
               </button>
             </div>
             
             <div className="space-y-3">
               <a 
                 href="tel:+919876543210" 
-                className="flex items-center gap-3 p-3 rounded-xl bg-pink-50 dark:bg-pink-900/20 hover:bg-pink-100 dark:hover:bg-pink-900/30 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl bg-pink-50 dark:bg-pink-950/30 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition-colors"
                 onClick={() => console.log('Calling...')}
               >
                 <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center flex-shrink-0">
                   <Phone className="w-5 h-5 text-white" weight="fill" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 dark:text-white text-sm">+91 8409725206</p>
-                  <p className="text-xs text-slate-500">{t('common.callNow')}</p>
+                  <p className="font-semibold text-foreground text-sm">+91 8409725206</p>
+                  <p className="text-xs text-muted-foreground">{t('common.callNow')}</p>
                 </div>
               </a>
               
               <a 
                 href="mailto:bhaskarjaikar.1@gmail.com" 
-                className="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+                className="flex items-center gap-3 p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
               >
                 <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                   <Envelope className="w-5 h-5 text-white" weight="fill" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 dark:text-white text-sm truncate">bhaskarjaikar.1@gmail.com</p>
-                  <p className="text-xs text-slate-500">{t('common.emailUs')}</p>
+                  <p className="font-semibold text-foreground text-sm truncate">bhaskarjaikar.1@gmail.com</p>
+                  <p className="text-xs text-muted-foreground">{t('common.emailUs')}</p>
                 </div>
               </a>
               
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-50 dark:bg-purple-950/30">
                 <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0">
                   <MapPin className="w-5 h-5 text-white" weight="fill" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-slate-900 dark:text-white text-sm">Baruraj, Muzaffarpur, Bihar</p>
-                  <p className="text-xs text-slate-500">{t('common.office')}</p>
+                  <p className="font-semibold text-foreground text-sm">Baruraj, Muzaffarpur, Bihar</p>
+                  <p className="text-xs text-muted-foreground">{t('common.office')}</p>
                 </div>
               </div>
             </div>
@@ -568,23 +640,23 @@ function FeedbackSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             onClick={() => setIsOpen(true)}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm hover:shadow-md transition-all group"
+            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-card dark:bg-card border border-border rounded-2xl shadow-sm hover:shadow-md transition-all group"
           >
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 group-hover:scale-110 transition-transform">
               <ChatCircleText className="w-5 h-5 text-blue-600 dark:text-blue-400" weight="fill" />
             </div>
             <div className="text-left">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{t('home.feedback.title')}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{t('home.feedback.subtitle')}</p>
+              <h3 className="text-sm font-semibold text-foreground">{t('home.feedback.title')}</h3>
+              <p className="text-xs text-muted-foreground">{t('home.feedback.subtitle')}</p>
             </div>
-            <CaretRight className="w-5 h-5 text-slate-400 ml-auto group-hover:translate-x-1 transition-transform" weight="bold" />
+            <CaretRight className="w-5 h-5 text-muted-foreground ml-auto group-hover:translate-x-1 transition-transform" weight="bold" />
           </motion.button>
         ) : (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-lg overflow-hidden"
+            className="bg-card dark:bg-card border border-border rounded-2xl shadow-lg overflow-hidden"
           >
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
@@ -593,15 +665,15 @@ function FeedbackSection() {
                     <ChatCircleText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-base font-semibold text-slate-900 dark:text-white">{t('home.feedback.title')}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{t('home.feedback.subtitle')}</p>
+                    <h3 className="text-base font-semibold text-foreground">{t('home.feedback.title')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('home.feedback.subtitle')}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  className="p-2 rounded-lg hover:bg-muted dark:hover:bg-muted transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-400" weight="bold" />
+                  <X className="w-5 h-5 text-muted-foreground" weight="bold" />
                 </button>
               </div>
 
@@ -612,7 +684,7 @@ function FeedbackSection() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={t('home.feedback.namePlaceholder')}
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
                   <input
                     type="email"
@@ -622,7 +694,7 @@ function FeedbackSection() {
                       setEmailError('')
                     }}
                     placeholder={t('home.feedback.emailPlaceholder')}
-                    className={`w-full px-3 py-2.5 rounded-lg border ${emailError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700 focus:ring-blue-500'} bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    className={`w-full px-3 py-2.5 rounded-lg border ${emailError ? 'border-red-500 focus:ring-red-500' : 'border-input focus:ring-blue-500'} bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                   />
                   {emailError && (
                     <p className="text-red-500 text-xs mt-1">{emailError}</p>
@@ -634,13 +706,13 @@ function FeedbackSection() {
                   placeholder={t('home.feedback.messagePlaceholder')}
                   rows={3}
                   required
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  className="w-full px-3 py-2.5 rounded-lg border border-input bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                 />
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                    className="px-4 py-2 rounded-lg border border-input text-muted-foreground text-sm font-medium hover:bg-muted transition-colors"
                   >
                     Cancel
                   </button>
@@ -1110,10 +1182,10 @@ export default function Home() {
         </AnimatePresence>
 
         {/* Navbar */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 transition-colors">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-card/95 dark:bg-card/95 backdrop-blur-md border-b border-border transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center">
-              <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-lg p-1 shadow-sm">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 bg-card rounded-lg p-1 shadow-sm">
                 <Image 
                   src="/agorich-logo.png" 
                   alt="Agorich Pharma" 
@@ -1128,15 +1200,15 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => setDarkMode(!darkMode)}
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-lg hover:bg-muted dark:hover:bg-muted transition-colors"
               >
-                {darkMode ? <Sun className="w-5 h-5 text-amber-400" weight="fill" /> : <Moon className="w-5 h-5 text-slate-600" weight="fill" />}
+                {darkMode ? <Sun className="w-5 h-5 text-amber-400" weight="fill" /> : <Moon className="w-5 h-5 text-muted-foreground" weight="fill" />}
               </button>
               <LanguageSwitcher />
               <button onClick={() => router.push('/login')} className="hidden sm:flex bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 text-white px-4 py-2 rounded-full font-semibold text-sm">
                 Get Started
               </button>
-              <button onClick={() => setMenuOpen(true)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
+              <button onClick={() => setMenuOpen(true)} className="p-2 rounded-lg hover:bg-muted dark:hover:bg-muted">
                 <div className="w-5 h-5 flex flex-col justify-between py-0.5">
                   <div className="w-full h-1 rounded-sm" style={{ backgroundColor: '#FF9933' }}></div>
                   <div className="w-full h-1 rounded-sm" style={{ backgroundColor: '#FFFFFF' }}></div>
@@ -1205,7 +1277,7 @@ export default function Home() {
       <ScrollReveal>
         <section className="py-10 sm:py-12 px-4 sm:px-6 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
           <div className="max-w-2xl mx-auto text-center">
-            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base mb-6 font-medium">
+            <p className="text-slate-600 dark:text-muted-foreground text-sm sm:text-base mb-6 font-medium">
               {t('home.cta.ready')}
             </p>
             <div className="flex flex-row gap-4 justify-center items-center">
@@ -1231,11 +1303,11 @@ export default function Home() {
 
       {/* HEALTH STATS BAR - Live Data with Staggered Reveal */}
       <ParallaxSection speed={0.1}>
-        <section className="py-10 sm:py-14 px-4 sm:px-6 bg-white dark:bg-slate-900 border-y border-slate-200 dark:border-slate-700">
+        <section className="py-10 sm:py-14 px-4 sm:px-6 bg-card dark:bg-card border-y border-border">
           <div className="max-w-6xl mx-auto">
             <ScrollReveal className="text-center mb-6">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mb-1">{t('home.health.title')}</h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">{t('home.health.desc')}</p>
+              <h3 className="text-lg sm:text-xl font-bold text-foreground mb-1">{t('home.health.title')}</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">{t('home.health.desc')}</p>
             </ScrollReveal>
             <StaggerContainer staggerDelay={0.12} className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
               <StaggerItem>
@@ -1260,7 +1332,7 @@ export default function Home() {
               </StaggerItem>
             </StaggerContainer>
             <ScrollReveal delay={0.4} className="mt-6 text-center">
-              <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1.5">
+              <div className="text-xs text-muted-foreground dark:text-slate-500 flex items-center justify-center gap-1.5">
                 <motion.div
                   animate={{ scale: [1, 1.2, 1] }}
                   transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
@@ -1276,11 +1348,11 @@ export default function Home() {
 
       {/* FEATURES - Staggered Reveal with Parallax */}
       <ParallaxSection speed={0.2}>
-        <section id="features" className="py-12 sm:py-16 px-4 sm:px-6 bg-white dark:bg-slate-900 transition-colors">
+        <section id="features" className="py-12 sm:py-16 px-4 sm:px-6 bg-card dark:bg-card transition-colors">
           <div className="max-w-6xl mx-auto">
             <ScrollReveal className="text-center mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">{t('home.medicines.title')}</h2>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">{t('home.medicines.desc')}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{t('home.medicines.title')}</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">{t('home.medicines.desc')}</p>
             </ScrollReveal>
 
             {/* Staggered 2x2 Grid - Cards animate in sequence */}
@@ -1412,14 +1484,14 @@ export default function Home() {
 
       {/* FOOTER - Arlo Style with Theme Support */}
       <ScrollReveal>
-        <footer className={`${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} border-t py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 relative z-10`}>
+        <footer className="bg-background border-border border-t py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-300 relative z-10">
         <div className="max-w-7xl mx-auto">
           {/* Main Footer Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
             {/* Left Side - Brand */}
             <div className="flex flex-col justify-between">
               <div>
-                <p className={`${darkMode ? 'text-slate-300' : 'text-slate-600'} text-lg mb-6 leading-relaxed`}>
+                <p className="text-foreground text-lg mb-6 leading-relaxed">
                   Seamless Care for a <span className="text-emerald-600 font-medium italic">Better Life.</span>
                 </p>
                 <div className="relative">
@@ -1438,43 +1510,43 @@ export default function Home() {
             <div className="grid grid-cols-3 gap-8 text-sm">
               {/* Company */}
               <div>
-                <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>Company</h4>
+                <h4 className="font-semibold text-foreground mb-4">Company</h4>
                 <ul className="space-y-3">
-                  <li><Link href="/about" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>About</Link></li>
-                  <li><Link href="/mission" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Mission</Link></li>
-                  <li><Link href="/values" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Values</Link></li>
+                  <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About</Link></li>
+                  <li><Link href="/mission" className="text-muted-foreground hover:text-primary transition-colors">Mission</Link></li>
+                  <li><Link href="/values" className="text-muted-foreground hover:text-primary transition-colors">Values</Link></li>
                 </ul>
               </div>
 
               {/* Resources */}
               <div>
-                <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>Resources</h4>
+                <h4 className="font-semibold text-foreground mb-4">Resources</h4>
                 <ul className="space-y-3">
-                  <li><Link href="/login" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Login</Link></li>
-                  <li><Link href="/medicines" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Medicines</Link></li>
-                  <li><a href="/agorich-brochure.pdf" download className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Brochure</a></li>
+                  <li><Link href="/login" className="text-muted-foreground hover:text-primary transition-colors">Login</Link></li>
+                  <li><Link href="/medicines" className="text-muted-foreground hover:text-primary transition-colors">Medicines</Link></li>
+                  <li><a href="/agorich-brochure.pdf" download className="text-muted-foreground hover:text-primary transition-colors">Brochure</a></li>
                 </ul>
               </div>
 
               {/* Legal */}
               <div>
-                <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'} mb-4`}>Legal</h4>
+                <h4 className="font-semibold text-foreground mb-4">Legal</h4>
                 <ul className="space-y-3">
-                  <li><Link href="/privacy" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Privacy Policy</Link></li>
-                  <li><Link href="/terms" className={`${darkMode ? 'text-slate-400 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'} transition-colors`}>Terms of Service</Link></li>
+                  <li><Link href="/privacy" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link></li>
                 </ul>
               </div>
             </div>
           </div>
 
           {/* Bottom Bar */}
-          <div className={`pt-6 border-t ${darkMode ? 'border-slate-700' : 'border-slate-200'} flex flex-col sm:flex-row justify-between items-center gap-4`}>
-            <p className={`${darkMode ? 'text-slate-500' : 'text-slate-400'} text-xs uppercase tracking-wider`}>{t('home.footer.copyright')}</p>
+          <div className="pt-6 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-muted-foreground text-xs uppercase tracking-wider">{t('home.footer.copyright')}</p>
             <div className="flex items-center gap-4">
-              <a href="tel:+918409725206" className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${darkMode ? 'border-slate-600 text-slate-400 hover:border-emerald-500 hover:text-emerald-400' : 'border-slate-300 text-slate-500 hover:border-emerald-500 hover:text-emerald-600'}`}>
+              <a href="tel:+918409725206" className="w-8 h-8 rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center justify-center transition-colors">
                 <Phone className="w-4 h-4" />
               </a>
-              <a href="mailto:bhaskarjaikar.1@gmail.com" className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors ${darkMode ? 'border-slate-600 text-slate-400 hover:border-emerald-500 hover:text-emerald-400' : 'border-slate-300 text-slate-500 hover:border-emerald-500 hover:text-emerald-600'}`}>
+              <a href="mailto:bhaskarjaikar.1@gmail.com" className="w-8 h-8 rounded-full border border-border text-muted-foreground hover:border-primary hover:text-primary flex items-center justify-center transition-colors">
                 <Envelope className="w-4 h-4" />
               </a>
             </div>
@@ -1487,23 +1559,23 @@ export default function Home() {
       {menuOpen && (
         <>
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40" onClick={() => setMenuOpen(false)} />
-          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-72 bg-white dark:bg-slate-900 shadow-2xl z-50 overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-              <span className="font-bold text-slate-900 dark:text-white">{t('home.menu.home')}</span>
-              <button onClick={() => setMenuOpen(false)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-                <X className="w-5 h-5 text-slate-700 dark:text-slate-300" weight="bold" />
+          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed right-0 top-0 h-full w-72 bg-card dark:bg-card shadow-2xl z-50 overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <span className="font-bold text-foreground">{t('home.menu.home')}</span>
+              <button onClick={() => setMenuOpen(false)} className="p-2 rounded-lg hover:bg-muted dark:hover:bg-muted">
+                <X className="w-5 h-5 text-muted-foreground" weight="bold" />
               </button>
             </div>
             <nav className="p-3 space-y-1">
               {[{ label: t('home.menu.home'), href: '/' }, { label: t('home.menu.features'), href: '#features' }, { label: t('home.menu.about'), href: '/about' }, { label: t('home.menu.mission'), href: '/mission' }, { label: t('home.menu.values'), href: '/values' }, { label: t('home.menu.retailerLogin'), href: '/login' }].map((item) => (
-                <Link key={item.label} href={item.href} onClick={() => setMenuOpen(false)} className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300">
+                <Link key={item.label} href={item.href} onClick={() => setMenuOpen(false)} className="flex items-center justify-between p-3 rounded-lg hover:bg-muted dark:hover:bg-muted transition-colors text-foreground">
                   <span className="font-medium text-sm">{item.label}</span>
-                  <CaretRight className="w-4 h-4 text-slate-400" weight="bold" />
+                  <CaretRight className="w-4 h-4 text-muted-foreground" weight="bold" />
                 </Link>
               ))}
             </nav>
-            <div className="p-3 border-t border-slate-200 dark:border-slate-700">
-              <button onClick={() => { setDarkMode(!darkMode); setMenuOpen(false); }} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-700 dark:text-slate-300">
+            <div className="p-3 border-t border-border">
+              <button onClick={() => { setDarkMode(!darkMode); setMenuOpen(false); }} className="flex items-center gap-3 w-full p-3 rounded-lg hover:bg-muted dark:hover:bg-muted transition-colors text-foreground">
                 {darkMode ? <Sun className="w-5 h-5" weight="fill" /> : <Moon className="w-5 h-5" weight="fill" />}
                 <span className="font-medium text-sm">{darkMode ? t('home.menu.lightMode') : t('home.menu.darkMode')}</span>
               </button>

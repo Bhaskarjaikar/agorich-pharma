@@ -5,3 +5,4 @@ export { default as inventoryRoutes } from './inventoryRoutes';
 export { default as orderRoutes } from './orderRoutes';
 export { default as invoiceRoutes } from './invoiceRoutes';
 export { default as dashboardRoutes } from './dashboardRoutes';
+export { default as paymentRoutes } from './paymentRoutes';

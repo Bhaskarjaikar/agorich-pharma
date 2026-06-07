@@ -4,6 +4,9 @@
 
 export const CANONICAL_INVOICE_STATUSES: ReadonlySet<string> = new Set([
   'DRAFT',
+  'PENDING',
+  'APPROVED',
+  'COMPLETED',
   'WAITING_FOR_APPROVAL',
   'SENT',
   'PROCESSING',
@@ -32,7 +35,9 @@ export const CANONICAL_INVOICE_PAYMENT_STATUSES: ReadonlySet<string> = new Set([
 export const CANONICAL_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'DRAFT',
   'WAITING_FOR_APPROVAL',
+  'PENDING',
   'CONFIRMED',
+  'SHIPPED',
   'CANCELLED',
   'PAYMENT_FAILED'
 ]);
@@ -65,7 +70,9 @@ export const CANONICAL_DISTRIBUTOR_ORDER_STATUSES: ReadonlySet<string> = new Set
 export const TERMINAL_INVOICE_STATUSES: ReadonlySet<string> = new Set([
   'DELIVERED',
   'CANCELLED',
-  'REFUNDED'
+  'REFUNDED',
+  'PAID',
+  'COMPLETED'
 ]);
 
 export const TERMINAL_ORDER_STATUSES: ReadonlySet<string> = new Set([

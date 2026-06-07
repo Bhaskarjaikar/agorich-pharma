@@ -33,6 +33,7 @@ import Protected from '@/components/Protected'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAppNotifications } from '@/hooks/useAppNotifications'
+import { ExpandableText } from '@/components/ui/expandable-text'
 
 const ADMIN_SUPERUSER_ID = '723421ed-f226-41f0-bb09-3feb55e3e293'
 
@@ -241,15 +242,21 @@ export default function RetailerDashboard() {
   const loadKPIData = async () => {
     try {
       if (!userId) return
-      // Authentication removed - no token needed
-      const res = await fetch(`/api/invoices?user_id=${userId}&limit=1000`, { 
-        headers: { 
+      const res = await fetch(`/api/invoices?limit=1000`, {
+        headers: {
           'cache-control': 'no-store'
         },
         credentials: 'include'
       })
-      if (!res.ok) return
-      const json: { invoices?: DashboardInvoice[] } = await res.json()
+      if (!res.ok) {
+        console.error('Failed to load invoices:', res.status, res.statusText)
+        return
+      }
+      const json = await res.json()
+      if (!json.success && json.error) {
+        console.error('API returned error:', json.error)
+        return
+      }
       const invoices: DashboardInvoice[] = json.invoices ?? []
 
       const totalOrders = invoices.length
@@ -264,7 +271,6 @@ export default function RetailerDashboard() {
             .filter((invoice) => invoice.status !== 'PAID')
             .reduce((sum, invoice) => sum + Number(invoice.grand_total ?? 0), 0)
 
-      // Profit estimate: fixed 40% of revenue when item-level margin not available
       const profitValue = totalRevenue * 0.4
       const profitPrevious = profitValue > 0 ? Math.max(0, profitValue - totalRevenue * 0.05) : 0
       const profitChange = profitValue - profitPrevious
@@ -303,10 +309,20 @@ export default function RetailerDashboard() {
   useEffect(() => {
     const loadRecentOrders = () => {
       try {
-        const invoices: DashboardInvoice[] = JSON.parse(localStorage.getItem('invoices') || '[]')
-        
-        // Sort by date and take last 4
-        const sortedInvoices: RecentOrder[] = invoices
+        const raw = localStorage.getItem('invoices')
+        if (!raw) {
+          setRecentOrders([])
+          return
+        }
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed)) {
+          setRecentOrders([])
+          return
+        }
+        const validInvoices = parsed.filter((inv): inv is DashboardInvoice =>
+          inv !== null && typeof inv === 'object' && typeof inv.invoice_number === 'string'
+        )
+        const sortedInvoices: RecentOrder[] = validInvoices
           .sort((a, b) => new Date(b.created_at ?? '').getTime() - new Date(a.created_at ?? '').getTime())
           .slice(0, 4)
           .map((invoice) => ({
@@ -314,9 +330,9 @@ export default function RetailerDashboard() {
             date: new Date(invoice.invoice_date ?? '').toLocaleDateString('en-IN'),
             amount: Number(invoice.grand_total ?? 0),
             status: invoice.status,
-            margin: Number(invoice.grand_total ?? 0) * 0.3 // 30% profit margin
+            margin: Number(invoice.grand_total ?? 0) * 0.3
           }))
-        
+
         setRecentOrders(sortedInvoices)
       } catch (error) {
         console.error('Error loading recent orders:', error)
@@ -452,7 +468,7 @@ export default function RetailerDashboard() {
               <Button
                 onClick={() => {
                   setShowOnboardingReminder(false)
-                  router.push('/onboarding')
+                  router.push('/onboarding/retailer')
                 }}
               >
                 Go to Onboarding
@@ -538,7 +554,11 @@ export default function RetailerDashboard() {
                     }`} />
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">{notification.title}</p>
-                      <p className="text-sm text-foreground">{notification.message}</p>
+                      <ExpandableText 
+                        text={notification.message} 
+                        maxLength={120}
+                        className="mt-1"
+                      />
                       <p className="text-xs mt-1 text-muted-foreground">
                         {new Date(notification.created_at).toLocaleString('en-IN')}
                       </p>
@@ -570,15 +590,42 @@ export default function RetailerDashboard() {
       )}
 
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-40 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-card/95 backdrop-blur-xl border-b sticky top-0 z-40 shadow-sm transition-all duration-300">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
           <div className="flex justify-between items-center h-16">
-            {/* Left side - User Profile */}
+            {/* Left side - Menu Toggle + User Profile */}
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-foreground hover:bg-muted"
+              >
+                {sidebarOpen ? <X className="w-5 h-5" weight="bold" /> : <List className="w-5 h-5" weight="bold" />}
+              </Button>
+              <div 
+                className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => router.push('/retailer/settings')}
+              >
+                <div className="hidden sm:flex items-center gap-2">
+                  <Image
+                    src="/agorich-logo.png"
+                    alt="Agorich"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain"
+                  />
+                  <span className="text-sm font-semibold text-foreground">Agorich</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Center - User Name (Desktop) */}
             <div 
-              className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
+              className="hidden md:flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
               onClick={() => router.push('/retailer/settings')}
             >
-              <span className="text-lg md:text-xl font-semibold text-foreground">
+              <span className="text-lg font-semibold text-foreground">
                 {userName?.split(' ')[0] || 'User'}
               </span>
               {displayPhoto ? (
@@ -587,17 +634,17 @@ export default function RetailerDashboard() {
                   alt="Profile"
                   width={32}
                   height={32}
-                  className="w-8 h-8 rounded-full object-cover border-2"
+                  className="w-8 h-8 rounded-full object-cover border-2 border-border"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground border-2">
+                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground border-2 border-border">
                   {userName?.charAt(0).toUpperCase() || 'U'}
                 </div>
               )}
             </div>
             
             {/* Right side buttons */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               {/* Dark Mode Toggle */}
               <ThemeToggle />
               
@@ -785,38 +832,39 @@ export default function RetailerDashboard() {
         </>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content - Centered & Contained */}
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 lg:py-8">
         {/* Quick Actions - Sticky Navigation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="sticky top-16 z-30 -mx-4 sm:mx-0 mb-6"
+          className="mb-6"
         >
-          <div className="flex flex-row gap-2 sm:gap-4 p-2 sm:p-3 rounded-3xl shadow-2xl backdrop-blur-xl border-2 bg-card/95">
-            {/* Dashboard - Active (Enhanced Glow) */}
+          <div className="flex flex-row gap-2 sm:gap-4 p-2 sm:p-3 rounded-2xl shadow-lg backdrop-blur-xl border bg-card/95">
+            {/* Dashboard - Active */}
             <Button 
-              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-xl ring-2 transition-all duration-300 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white scale-[1.02] hover:from-emerald-400 hover:to-emerald-500 hover:scale-[1.03]"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-lg ring-2 transition-all duration-300 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-400 hover:to-emerald-500"
               onClick={() => router.push('/retailer')}
             >
               <House className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
               <span className="text-sm sm:text-base font-semibold">Dashboard</span>
             </Button>
             
-            {/* Order Now - Inactive (Enhanced) */}
+            {/* Order Now */}
             <Button 
               variant="outline"
-              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl hover:scale-[1.02]"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
               onClick={() => router.push('/retailer/create-invoice')}
             >
               <Package className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
               <span className="text-sm sm:text-base font-medium">Order Now</span>
             </Button>
             
-            {/* Invoices - Inactive (Enhanced) */}
+            {/* Invoices */}
             <Button 
               variant="outline"
-              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl hover:scale-[1.02]"
+              className="flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
               onClick={() => router.push('/retailer/invoices')}
             >
               <FileText className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1006,7 +1054,7 @@ export default function RetailerDashboard() {
                 </div>
                 <div className="mt-6 text-center">
                   <Button 
-                    className={`w-full shadow-md hover:shadow-lg transition-all duration-300 rounded-xl ${darkMode ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                    className="w-full shadow-md hover:shadow-lg transition-all duration-300 rounded-xl bg-card text-foreground hover:bg-muted"
                     onClick={() => router.push('/retailer/invoices')}
                   >
                     View All Orders
@@ -1018,13 +1066,13 @@ export default function RetailerDashboard() {
 
           {/* Notifications */}
           <div>
-            <Card className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-all duration-300`}>
-              <CardHeader className={`${darkMode ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-100'} border-b px-6 py-4`}>
-                <CardTitle className={`flex items-center text-base font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-                  <Bell className={`w-5 h-5 mr-2 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`} />
+            <Card className="bg-card border-border shadow-sm rounded-xl overflow-hidden hover:shadow-md transition-all duration-300">
+              <CardHeader className="bg-card/50 border-b border-border px-6 py-4">
+                <CardTitle className="flex items-center text-base font-semibold text-foreground">
+                  <Bell className="w-5 h-5 mr-2 text-muted-foreground" />
                   Notifications
                 </CardTitle>
-                <CardDescription className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <CardDescription className="text-sm text-muted-foreground">
                   Stay updated with your business
                 </CardDescription>
               </CardHeader>
@@ -1038,17 +1086,21 @@ export default function RetailerDashboard() {
                       transition={{ delay: 0.1 * index }}
                       className={`p-4 rounded-xl border ${
                         !notification.is_read 
-                          ? (darkMode ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200')
-                          : (darkMode ? 'bg-slate-800 border-slate-700' : 'bg-gray-50 border-gray-200')
+                          ? 'bg-amber-500/10 dark:bg-amber-500/20 border-amber-500/30'
+                          : 'bg-muted border-border'
                       }`}
                     >
                       <div className="flex items-start space-x-3">
                         <div className={`w-2 h-2 rounded-full mt-2 ${
-                          !notification.is_read ? 'bg-amber-500' : (darkMode ? 'bg-slate-500' : 'bg-gray-300')
+                          !notification.is_read ? 'bg-amber-500' : 'bg-muted-foreground'
                         }`} />
                         <div className="flex-1">
-                          <p className={`text-sm ${darkMode ? 'text-slate-200' : 'text-slate-900'}`}>{notification.message}</p>
-                          <p className={`text-xs mt-1 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>{notification.created_at}</p>
+                          <ExpandableText 
+                            text={notification.message} 
+                            maxLength={100}
+                            className="text-foreground"
+                          />
+                          <p className="text-xs mt-1 text-muted-foreground">{notification.created_at}</p>
                         </div>
                       </div>
                     </motion.div>
@@ -1057,7 +1109,7 @@ export default function RetailerDashboard() {
                 <div className="mt-6 text-center">
                   <Button 
                     size="sm" 
-                    className={`w-full shadow-md hover:shadow-lg transition-all duration-300 rounded-xl ${darkMode ? 'bg-white text-slate-900 hover:bg-slate-100' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                    className="w-full shadow-md hover:shadow-lg transition-all duration-300 rounded-xl bg-card text-foreground hover:bg-muted"
                     onClick={() => {
                       setShowNotifications(true)
                       router.replace('/retailer?notifications=1')

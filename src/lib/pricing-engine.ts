@@ -1,59 +1,129 @@
-import { UserRole } from './supabase-client'
-
-export interface PricingEngineInput {
-  mrp: number
+export interface PriceCalculation {
+  productId: string
+  costPrice: number
+  sellingPrice: number
+  marginPercentage: number
+  marginAmount: number
+  markupPercentage: number
+  gstRate: number
+  priceIncludingGst: number
 }
 
-export interface PricingEngineOutput {
-  distributorBuyPrice: number
-  appRetailerPrice: number
-  distributorMargin: number
-  distributorMarginPercentage: number
+export interface ProfitCalculation {
+  revenue: number
+  cost: number
+  profit: number
+  profitPercentage: number
 }
 
-/**
- * PricingEngine utility class for dual-pricing & margin protection
- */
-export class PricingEngine {
-  private static readonly DISTRIBUTOR_BUY_PERCENTAGE = 0.6
-  private static readonly APP_RETAILER_PERCENTAGE_MIN = 0.75
-  private static readonly APP_RETAILER_PERCENTAGE_MAX = 0.78
+export const STANDARD_GST_RATES = {
+  MEDICINES: 5,
+  LUXURY: 18,
+  DEFAULT: 12
+} as const
 
-  /**
-   * Calculate all pricing components based on MRP
-   */
-  static calculate(input: PricingEngineInput, appRetailerPercentage: number = 0.77): PricingEngineOutput {
-    const { mrp } = input
+export function calculatePrice(
+  costPrice: number,
+  targetMargin: number,
+  gstRate: number = STANDARD_GST_RATES.MEDICINES
+): PriceCalculation {
+  const sellingPrice = costPrice / (1 - targetMargin / 100)
+  const marginAmount = sellingPrice - costPrice
+  const marginPercentage = (marginAmount / sellingPrice) * 100
+  const markupPercentage = (marginAmount / costPrice) * 100
+  const gstAmount = (sellingPrice * gstRate) / 100
+  const priceIncludingGst = sellingPrice + gstAmount
 
-    if (appRetailerPercentage < this.APP_RETAILER_PERCENTAGE_MIN || appRetailerPercentage > this.APP_RETAILER_PERCENTAGE_MAX) {
-      throw new Error(`App retailer percentage must be between ${this.APP_RETAILER_PERCENTAGE_MIN * 100}% and ${this.APP_RETAILER_PERCENTAGE_MAX * 100}%`)
-    }
-
-    const distributorBuyPrice = mrp * this.DISTRIBUTOR_BUY_PERCENTAGE
-    const appRetailerPrice = mrp * appRetailerPercentage
-    const distributorMargin = appRetailerPrice - distributorBuyPrice
-    const distributorMarginPercentage = (distributorMargin / appRetailerPrice) * 100
-
-    return {
-      distributorBuyPrice: Math.round(distributorBuyPrice * 100) / 100,
-      appRetailerPrice: Math.round(appRetailerPrice * 100) / 100,
-      distributorMargin: Math.round(distributorMargin * 100) / 100,
-      distributorMarginPercentage: Math.round(distributorMarginPercentage * 100) / 100
-    }
+  return {
+    productId: '',
+    costPrice,
+    sellingPrice: Math.round(sellingPrice * 100) / 100,
+    marginPercentage: Math.round(marginPercentage * 100) / 100,
+    marginAmount: Math.round(marginAmount * 100) / 100,
+    markupPercentage: Math.round(markupPercentage * 100) / 100,
+    gstRate,
+    priceIncludingGst: Math.round(priceIncludingGst * 100) / 100
   }
+}
 
-  /**
-   * Get price for a specific user role
-   */
-  static getPriceForRole(input: PricingEngineInput, role: UserRole, appRetailerPercentage: number = 0.77): number {
-    const pricing = this.calculate(input, appRetailerPercentage)
+export function calculateProfit(
+  sellingPrice: number,
+  costPrice: number
+): ProfitCalculation {
+  const profit = sellingPrice - costPrice
+  const profitPercentage = costPrice > 0 ? (profit / costPrice) * 100 : 0
 
-    switch (role) {
-      case 'DISTRIBUTOR':
-        return pricing.distributorBuyPrice
-      case 'RETAILER':
-      default:
-        return pricing.appRetailerPrice
-    }
+  return {
+    revenue: sellingPrice,
+    cost: costPrice,
+    profit: Math.round(profit * 100) / 100,
+    profitPercentage: Math.round(profitPercentage * 100) / 100
   }
+}
+
+export function calculateInvoiceItemPrice(
+  mrp: number,
+  distributorPrice: number,
+  retailerPrice: number,
+  quantity: number,
+  gstRate: number = STANDARD_GST_RATES.MEDICINES
+) {
+  const ratePerUnit = retailerPrice
+  const amountBeforeTax = ratePerUnit * quantity
+  const gstAmount = amountBeforeTax * (gstRate / 100)
+  const totalWithTax = amountBeforeTax + gstAmount
+
+  return {
+    rate_per_unit: ratePerUnit,
+    amount_before_tax: Math.round(amountBeforeTax * 100) / 100,
+    gst_amount: Math.round(gstAmount * 100) / 100,
+    total_with_tax: Math.round(totalWithTax * 100) / 100,
+    margin_percentage: distributorPrice > 0
+      ? Math.round(((retailerPrice - distributorPrice) / retailerPrice * 100) * 100) / 100
+      : 0
+  }
+}
+
+export const VALID_INVOICE_STATUSES = [
+  'DRAFT',
+  'WAITING_FOR_APPROVAL',
+  'CONFIRMED',
+  'SENT',
+  'PROCESSING',
+  'PACKING',
+  'DISPATCHED',
+  'DELIVERED',
+  'PARTIAL_PAID',
+  'PAID',
+  'OVERDUE',
+  'CANCELLED',
+  'REFUNDED',
+  'PAYMENT_FAILED'
+] as const
+
+export type InvoiceStatus = typeof VALID_INVOICE_STATUSES[number]
+
+export function isValidInvoiceStatus(status: string): status is InvoiceStatus {
+  return VALID_INVOICE_STATUSES.includes(status as InvoiceStatus)
+}
+
+export const STATUS_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
+  'DRAFT': ['WAITING_FOR_APPROVAL', 'CANCELLED'],
+  'WAITING_FOR_APPROVAL': ['CONFIRMED', 'CANCELLED'],
+  'CONFIRMED': ['SENT', 'CANCELLED'],
+  'SENT': ['PROCESSING', 'CANCELLED'],
+  'PROCESSING': ['PACKING', 'CANCELLED'],
+  'PACKING': ['DISPATCHED', 'CANCELLED'],
+  'DISPATCHED': ['DELIVERED', 'CANCELLED'],
+  'DELIVERED': ['PARTIAL_PAID', 'PAID', 'CANCELLED'],
+  'PARTIAL_PAID': ['PAID', 'CANCELLED'],
+  'PAID': ['REFUNDED'],
+  'OVERDUE': ['PAID', 'CANCELLED'],
+  'CANCELLED': [],
+  'REFUNDED': [],
+  'PAYMENT_FAILED': ['PENDING', 'PAID']
+}
+
+export function canTransitionTo(currentStatus: InvoiceStatus, newStatus: InvoiceStatus): boolean {
+  return STATUS_TRANSITIONS[currentStatus]?.includes(newStatus) ?? false
 }

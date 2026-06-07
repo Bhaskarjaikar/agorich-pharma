@@ -7,9 +7,9 @@ import Image from 'next/image'
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 text-white py-16 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-primary via-purple-600 to-indigo-700 text-primary-foreground py-16 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="absolute inset-0" style={{
@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
           >
             <Link 
               href="/" 
-              className="inline-flex items-center text-white/80 hover:text-white transition-colors duration-300 mb-8"
+              className="inline-flex items-center text-primary-foreground/80 hover:text-primary-foreground transition-colors duration-300 mb-8"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
@@ -37,7 +37,7 @@ export default function PrivacyPolicy() {
               <div className="relative group">
                 <div className="relative w-16 h-16">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 via-blue-500 to-purple-500 animate-spin" style={{animationDuration: '3s'}}></div>
-                  <div className="absolute inset-1 bg-white rounded-full flex items-center justify-center">
+                  <div className="absolute inset-1 bg-card rounded-full flex items-center justify-center">
                     <Image 
                       src="/agorich-logo.png" 
                       alt="Agorich Logo" 
@@ -53,7 +53,7 @@ export default function PrivacyPolicy() {
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Privacy Policy
             </h1>
-            <p className="text-xl text-white/90 max-w-2xl mx-auto">
+            <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto">
               Your privacy is important to us. Learn how we collect, use, and protect your information.
             </p>
           </motion.div>
@@ -66,14 +66,14 @@ export default function PrivacyPolicy() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="bg-white rounded-2xl shadow-xl p-8 md:p-12"
+          className="bg-card rounded-2xl shadow-xl p-8 md:p-12"
         >
           <div className="prose prose-lg max-w-none">
             <div className="text-center mb-12">
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
-                <Shield className="w-8 h-8 text-white" />
+                <Shield className="w-8 h-8 text-primary-foreground" />
               </div>
-              <p className="text-gray-600 text-lg">
+              <p className="text-muted-foreground text-lg">
                 <strong>Effective Date:</strong> January 1, 2024<br />
                 <strong>Last Updated:</strong> January 1, 2024
               </p>
@@ -81,13 +81,13 @@ export default function PrivacyPolicy() {
 
             <div className="space-y-8">
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Eye className="w-6 h-6 mr-3 text-blue-600" />
+                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
+                  <Eye className="w-6 h-6 mr-3 text-primary" />
                   1. Information We Collect
                 </h2>
-                <div className="bg-blue-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Personal Information</h3>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                <div className="bg-primary/10 dark:bg-primary/20 p-6 rounded-lg">
+                  <h3 className="text-lg font-semibold text-foreground mb-3">Personal Information</h3>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>Name, email address, and contact information</li>
                     <li>Business registration details and GSTIN</li>
                     <li>Pharmacy license information</li>
@@ -98,12 +98,12 @@ export default function PrivacyPolicy() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Database className="w-6 h-6 mr-3 text-purple-600" />
+                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
+                  <Database className="w-6 h-6 mr-3 text-purple-500 dark:text-purple-400" />
                   2. How We Use Your Information
                 </h2>
-                <div className="bg-purple-50 p-6 rounded-lg">
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                <div className="bg-purple-500/10 dark:bg-purple-950/30 p-6 rounded-lg">
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>Process and fulfill your pharmaceutical orders</li>
                     <li>Provide customer support and technical assistance</li>
                     <li>Send important updates about your account and orders</li>
@@ -115,15 +115,15 @@ export default function PrivacyPolicy() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Lock className="w-6 h-6 mr-3 text-green-600" />
+                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
+                  <Lock className="w-6 h-6 mr-3 text-green-600 dark:text-green-400" />
                   3. Data Security
                 </h2>
-                <div className="bg-green-50 p-6 rounded-lg">
-                  <p className="text-gray-700 mb-4">
+                <div className="bg-green-500/10 dark:bg-green-950/30 p-6 rounded-lg">
+                  <p className="text-muted-foreground mb-4">
                     We implement industry-standard security measures to protect your information:
                   </p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>SSL encryption for all data transmission</li>
                     <li>Secure servers with regular security updates</li>
                     <li>Access controls and authentication protocols</li>
@@ -134,15 +134,15 @@ export default function PrivacyPolicy() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                  <Users className="w-6 h-6 mr-3 text-orange-600" />
+                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
+                  <Users className="w-6 h-6 mr-3 text-orange-500 dark:text-orange-400" />
                   4. Information Sharing
                 </h2>
-                <div className="bg-orange-50 p-6 rounded-lg">
-                  <p className="text-gray-700 mb-4">
+                <div className="bg-orange-500/10 dark:bg-orange-950/30 p-6 rounded-lg">
+                  <p className="text-muted-foreground mb-4">
                     We do not sell your personal information. We may share information only in these circumstances:
                   </p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>With pharmaceutical suppliers to fulfill your orders</li>
                     <li>With payment processors for transaction processing</li>
                     <li>With shipping partners for delivery coordination</li>
@@ -153,13 +153,13 @@ export default function PrivacyPolicy() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center">
-                  <FileText className="w-6 h-6 mr-3 text-indigo-600" />
+                <h2 className="text-2xl font-bold text-foreground mb-4 flex items-center">
+                  <FileText className="w-6 h-6 mr-3 text-indigo-500 dark:text-indigo-400" />
                   5. Your Rights
                 </h2>
-                <div className="bg-indigo-50 p-6 rounded-lg">
-                  <p className="text-gray-700 mb-4">You have the right to:</p>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
+                <div className="bg-indigo-500/10 dark:bg-indigo-950/30 p-6 rounded-lg">
+                  <p className="text-muted-foreground mb-4">You have the right to:</p>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li>Access and review your personal information</li>
                     <li>Correct inaccurate or incomplete information</li>
                     <li>Request deletion of your account and data</li>
@@ -170,14 +170,14 @@ export default function PrivacyPolicy() {
               </section>
 
               <section>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                <h2 className="text-2xl font-bold text-foreground mb-4">
                   6. Contact Information
                 </h2>
-                <div className="bg-gray-50 p-6 rounded-lg">
-                  <p className="text-gray-700 mb-4">
+                <div className="bg-muted p-6 rounded-lg">
+                  <p className="text-muted-foreground mb-4">
                     If you have questions about this Privacy Policy or want to exercise your rights, please contact us:
                   </p>
-                  <div className="space-y-2 text-gray-700">
+                  <div className="space-y-2 text-muted-foreground">
                     <p><strong>Email:</strong> bhaskarjaikar.1@gmail.com</p>
                     <p><strong>Phone:</strong> +91 8409725206</p>
                     <p><strong>Address:</strong> At + Vill + PO + PS: Baruraj Thana Chowk, Block: Motipur, Muzaffarpur, Bihar - 843111</p>
@@ -186,9 +186,9 @@ export default function PrivacyPolicy() {
               </section>
             </div>
 
-            <div className="mt-12 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-              <p className="text-gray-700 text-center">
-                <strong>Note:</strong> This Privacy Policy may be updated from time to time. 
+            <div className="mt-12 p-6 bg-gradient-to-r from-primary/10 to-purple-500/10 dark:from-primary/20 dark:to-purple-950/30 rounded-lg border border-primary/20">
+              <p className="text-foreground text-center">
+                <strong>Note:</strong> This Privacy Policy may be updated from time to time.
                 We will notify you of any significant changes via email or through our platform.
               </p>
             </div>

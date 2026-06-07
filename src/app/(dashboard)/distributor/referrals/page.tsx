@@ -345,7 +345,7 @@ export default function ReferralDashboard() {
                     <div className="icon-squircle">
                       <Users className="w-4 h-4 text-emerald-400" weight="thin" />
                     </div>
-                    <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('referrals.totalReferrals')}</span>
+                    <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>{t('referrals.totalReferrals')}</span>
                   </div>
                   <p className={`text-xl font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{stats.totalReferrals}</p>
                 </div>
@@ -361,7 +361,7 @@ export default function ReferralDashboard() {
                     <div className="icon-squircle">
                       <CheckCircle className="w-4 h-4 text-emerald-400" weight="thin" />
                     </div>
-                    <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('referrals.activeReferrals')}</span>
+                    <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>{t('referrals.activeReferrals')}</span>
                   </div>
                   <p className={`text-xl font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{stats.activeReferrals}</p>
                 </div>
@@ -377,7 +377,7 @@ export default function ReferralDashboard() {
                     <div className="icon-squircle">
                       <CurrencyDollar className="w-4 h-4 text-emerald-400" weight="thin" />
                     </div>
-                    <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('referrals.totalEarned')}</span>
+                    <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>{t('referrals.totalEarned')}</span>
                   </div>
                   <p className={`text-xl font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatCurrency(stats.totalEarned)}</p>
                 </div>
@@ -393,7 +393,7 @@ export default function ReferralDashboard() {
                     <div className="icon-squircle">
                       <Calendar className="w-4 h-4 text-emerald-400" weight="thin" />
                     </div>
-                    <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('referrals.thisMonthEarned')}</span>
+                    <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>{t('referrals.thisMonthEarned')}</span>
                   </div>
                   <p className={`text-xl font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{formatCurrency(stats.thisMonthEarned)}</p>
                 </div>
@@ -408,7 +408,7 @@ export default function ReferralDashboard() {
             >
               <div className="vault-box p-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('referrals.yourReferralCode')}</span>
+                  <span className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>{t('referrals.yourReferralCode')}</span>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-xs text-emerald-400">Active</span>
@@ -416,7 +416,7 @@ export default function ReferralDashboard() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                  <code className={`text-2xl sm:text-3xl font-mono tracking-wider px-4 py-2 rounded-lg border ${darkMode ? 'text-slate-100 bg-slate-900/50 border-slate-700' : 'text-slate-900 bg-slate-100 border-slate-300'}`}>
+                  <code className={`text-2xl sm:text-3xl font-mono tracking-wider px-4 py-2 rounded-lg border ${darkMode ? 'text-slate-100 bg-slate-900/50 border-border' : 'text-slate-900 bg-slate-100 border-slate-300'}`}>
                     {referralCode}
                   </code>
                   
@@ -425,7 +425,7 @@ export default function ReferralDashboard() {
                       onClick={handleCopyCode}
                       size="sm"
                       variant="outline"
-                      className={`btn-premium ${darkMode ? 'border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
+                      className={`btn-premium ${darkMode ? 'border-slate-600 text-slate-300 hover:bg-background hover:text-white' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
                     >
                       <Copy className="w-4 h-4 mr-1" />
                       Copy
@@ -441,7 +441,7 @@ export default function ReferralDashboard() {
                 </div>
 
                 {qrCode && (
-                  <div className={`flex justify-center mt-4 pt-4 border-t ${darkMode ? 'border-slate-700/50' : 'border-slate-200'}`}>
+                  <div className={`flex justify-center mt-4 pt-4 border-t ${darkMode ? 'border-border/50' : 'border-slate-200'}`}>
                     <div className="bg-white p-3 rounded-xl shadow-lg">
                       <Image
                         src={qrCode}
@@ -466,11 +466,11 @@ export default function ReferralDashboard() {
                 <h3 className={`text-sm font-medium mb-4 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>How it Works</h3>
                 <div className="relative">
                   {/* Connecting line */}
-                  <div className={`absolute top-3 left-[12.5%] right-[12.5%] h-px hidden sm:block ${darkMode ? 'bg-slate-700' : 'bg-slate-300'}`} />
+                  <div className={`absolute top-3 left-[12.5%] right-[12.5%] h-px hidden sm:block ${darkMode ? 'bg-card' : 'bg-slate-300'}`} />
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
                     <div className="relative">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center mx-auto mb-2 relative z-10 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center mx-auto mb-2 relative z-10 ${darkMode ? 'bg-card' : 'bg-slate-200'}`}>
                         <span className={`font-bold text-xs ${darkMode ? 'text-white' : 'text-slate-700'}`}>1</span>
                       </div>
                       <p className={`text-xs ${darkMode ? 'text-white' : 'text-slate-900'}`}>Share Code</p>
@@ -506,8 +506,8 @@ export default function ReferralDashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8 }}
             >
-              <Card className={`border rounded-xl overflow-hidden h-full ${darkMode ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-white'}`}>
-                <CardHeader className={`px-3 py-2 ${darkMode ? 'bg-slate-800' : 'bg-slate-50'}`}>
+              <Card className={`border rounded-xl overflow-hidden h-full ${darkMode ? 'border-border bg-slate-900' : 'border-slate-200 bg-white'}`}>
+                <CardHeader className={`px-3 py-2 ${darkMode ? 'bg-background' : 'bg-slate-50'}`}>
                   <CardTitle className={`text-sm font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     Referrals ({referrals.length})
                   </CardTitle>
@@ -523,8 +523,8 @@ export default function ReferralDashboard() {
                         onClick={() => setActiveFilter(filter)}
                         className={`text-xs px-2 py-1 h-7 ${
                           activeFilter === filter
-                            ? (darkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-200 text-slate-900 border-slate-300')
-                            : (darkMode ? 'border-slate-600 text-slate-400 hover:bg-slate-800' : 'border-slate-300 text-slate-600 hover:bg-slate-100')
+                            ? (darkMode ? 'bg-card text-white border-slate-600' : 'bg-slate-200 text-slate-900 border-slate-300')
+                            : (darkMode ? 'border-slate-600 text-muted-foreground hover:bg-background' : 'border-slate-300 text-slate-600 hover:bg-slate-100')
                         }`}
                       >
                         {filter.charAt(0).toUpperCase() + filter.slice(1)}
@@ -541,7 +541,7 @@ export default function ReferralDashboard() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.05 * index }}
-                          className={`rounded-lg p-2 border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                          className={`rounded-lg p-2 border ${darkMode ? 'bg-background border-border' : 'bg-slate-100 border-slate-200'}`}
                         >
                           <div className="flex items-center justify-between">
                             <h4 className={`font-medium text-sm truncate ${darkMode ? 'text-white' : 'text-slate-900'}`}>{referral.referredName}</h4>
@@ -549,15 +549,15 @@ export default function ReferralDashboard() {
                               {getStatusIcon(referral.status)}
                             </Badge>
                           </div>
-                          <p className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{referral.referredType}</p>
+                          <p className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>{referral.referredType}</p>
                           
                           {referral.status === 'active' && (
                             <div className="mt-1">
-                              <div className={`flex justify-between text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                              <div className={`flex justify-between text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
                                 <span>₹{referral.referrer_bonus_amount || 0}</span>
                                 <span>{30 - referral.daysRemaining}/30d</span>
                               </div>
-                              <div className={`w-full rounded-full h-1.5 mt-1 ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                              <div className={`w-full rounded-full h-1.5 mt-1 ${darkMode ? 'bg-card' : 'bg-slate-200'}`}>
                                 <div 
                                   className="bg-green-500 h-1.5 rounded-full"
                                   style={{ width: `${referral.progress}%` }}
@@ -578,8 +578,8 @@ export default function ReferralDashboard() {
                         </motion.div>
                       ))
                     ) : (
-                      <div className={`text-center py-6 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-                        <Gift className={`w-8 h-8 mx-auto mb-2 opacity-50 ${darkMode ? '' : 'text-slate-400'}`} />
+                      <div className={`text-center py-6 ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
+                        <Gift className={`w-8 h-8 mx-auto mb-2 opacity-50 ${darkMode ? '' : 'text-muted-foreground'}`} />
                         <p className="text-sm">No referrals yet</p>
                       </div>
                     )}

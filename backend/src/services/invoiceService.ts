@@ -1,7 +1,9 @@
-import { InvoiceStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { Prisma, ProductSource, GstType } from '@prisma/client';
 import prisma from '../config/prisma';
 import { InvoiceRepository } from '../repositories/invoiceRepository';
 import { OrderRepository } from '../repositories/orderRepository';
+import { calculateOrderTax, TaxCalculationInput } from './taxEngine';
+import { logStatusTransition } from './auditService';
 
 export class InvoiceService {
   private invoiceRepository: InvoiceRepository;
@@ -21,11 +23,14 @@ export class InvoiceService {
     return `${prefix}-${year}${month}-${random}`;
   }
 
-  async generateInvoiceFromOrder(orderId: string) {
+  async generateInvoiceFromOrder(orderId: string, performedBy?: string) {
     return prisma.$transaction(async (tx: any) => {
       const order = await tx.order.findUnique({
         where: { id: orderId },
-        include: { items: { include: { product: true } } },
+        include: {
+          items: { include: { product: true, batch: true } },
+          retailer: true,
+        },
       });
 
       if (!order) {
@@ -33,59 +38,69 @@ export class InvoiceService {
       }
 
       const invoiceNumber = this.createInvoiceNumber();
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30);
 
-      const invoiceItems: Prisma.InvoiceItemCreateManyInvoiceInput[] = [];
-      let subtotal = new Prisma.Decimal(0);
-      let taxAmount = new Prisma.Decimal(0);
+      const customerState = order.retailer.stateCode || 'BR';
 
-      for (const item of order.items) {
-        const itemSubtotal = item.mrp.mul(item.quantity);
-        const itemTax = itemSubtotal.mul(item.gstRate).div(100);
-        const itemTotal = itemSubtotal.add(itemTax);
+      const taxInputs: TaxCalculationInput[] = order.items.map((item: any) => ({
+        productSource: item.batch?.product?.source || ProductSource.MARKETPLACE,
+        mrpPaise: item.batch?.product?.mrpPaise || 0,
+        ptrPaise: item.batch?.ptrPaise || null,
+        gstRate: item.batch?.product?.gstRate || 500,
+        quantity: item.quantity,
+        handlingFeePaise: item.batch?.handlingFeePaise || 0,
+        handlingFeePercent: item.batch?.handlingFeePercent || null,
+      }));
 
-        subtotal = subtotal.add(itemSubtotal);
-        taxAmount = taxAmount.add(itemTax);
-
-        invoiceItems.push({
-          productId: item.productId,
-          quantity: item.quantity,
-          mrp: item.mrp,
-          ptr: item.ptr,
-          pts: item.pts,
-          gstRate: item.gstRate,
-          subtotal: itemSubtotal,
-          taxAmount: itemTax,
-          total: itemTotal,
-        });
-      }
-
-      const totalAmount = subtotal.add(taxAmount);
+      const taxCalc = calculateOrderTax(taxInputs, customerState);
 
       const invoice = await tx.invoice.create({
         data: {
           invoiceNumber,
           orderId: order.id,
-          retailerId: order.retailerId,
-          distributorId: order.distributorId,
-          status: InvoiceStatus.GENERATED,
-          paymentStatus: PaymentStatus.UNPAID,
-          subtotal,
-          taxAmount,
-          totalAmount,
-          paidAmount: 0,
-          dueDate,
+          subtotalPaise: taxCalc.subtotalPaise,
+          totalTaxPaise: taxCalc.totalGstPaise,
+          grandTotalPaise: taxCalc.totalAmountPaise,
+          balanceDuePaise: taxCalc.totalAmountPaise,
+          gstType: taxCalc.isIntraState ? GstType.CGST_SGST : GstType.IGST,
+          issuedById: order.retailerId,
         },
       });
 
-      await tx.invoiceItem.createMany({
-        data: invoiceItems.map((item: any) => ({ ...item, invoiceId: invoice.id })),
+      await tx.order.update({
+        where: { id: orderId },
+        data: { orderStatus: 'CONFIRMED' as any },
+      });
+
+      await logStatusTransition(tx, {
+        entityType: 'INVOICE',
+        entityId: invoice.id,
+        fromStatus: null,
+        toStatus: 'GENERATED',
+        action: 'INVOICE_GENERATED',
+        performedBy,
+        metadata: { orderId, invoiceNumber },
+      });
+
+      await logStatusTransition(tx, {
+        entityType: 'ORDER',
+        entityId: orderId,
+        fromStatus: 'DRAFT',
+        toStatus: 'CONFIRMED',
+        action: 'ORDER_CONFIRMED_VIA_INVOICE',
+        performedBy,
       });
 
       return tx.invoice.findUnique({
         where: { id: invoice.id },
-        include: { items: { include: { product: true } }, retailer: true, distributor: true, order: true },
+        include: {
+          order: {
+            include: {
+              items: { include: { product: true, batch: true } },
+              retailer: true,
+              distributor: true,
+            },
+          },
+        },
       });
     });
   }
@@ -103,8 +118,6 @@ export class InvoiceService {
     limit?: number;
     retailerId?: string;
     distributorId?: string;
-    status?: InvoiceStatus;
-    paymentStatus?: PaymentStatus;
   }) {
     const [invoices, total] = await Promise.all([
       this.invoiceRepository.findAll(params),
@@ -125,27 +138,5 @@ export class InvoiceService {
       throw new Error('Invoice not found');
     }
     return this.invoiceRepository.update(id, data);
-  }
-
-  async recordPayment(id: string, amount: Prisma.Decimal | number) {
-    const invoice = await this.invoiceRepository.findById(id);
-    if (!invoice) {
-      throw new Error('Invoice not found');
-    }
-
-    const newPaidAmount = invoice.paidAmount.add(amount);
-    let paymentStatus = invoice.paymentStatus;
-
-    if (newPaidAmount.gte(invoice.totalAmount)) {
-      paymentStatus = PaymentStatus.PAID;
-    } else if (newPaidAmount.gt(0)) {
-      paymentStatus = PaymentStatus.PARTIAL;
-    }
-
-    return this.invoiceRepository.updatePaymentStatus(id, paymentStatus, newPaidAmount);
-  }
-
-  async sendInvoice(id: string) {
-    return this.updateInvoice(id, { status: InvoiceStatus.SENT });
   }
 }

@@ -10,7 +10,7 @@ async function requireAdmin() {
     .select('role')
     .eq('id', user.id)
     .single()
-  if (profErr || !profile || profile.role !== 'SUPER_ADMIN') {
+  if (profErr || !profile || !['SUPER_ADMIN', 'ADMIN', 'SALES', 'SUPPORT'].includes(profile.role)) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
   return { supabase }
@@ -129,6 +129,5 @@ export async function GET(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
 
 

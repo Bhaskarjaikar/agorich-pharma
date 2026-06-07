@@ -7,16 +7,22 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    if (!profile || profile.role !== 'SUPER_ADMIN') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!profile || !['SUPER_ADMIN', 'ADMIN', 'SALES', 'SUPPORT'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     // Reuse logic from summary; for brevity, export minimal columns
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q')?.trim() || ''
+    const MAX_SEARCH_LENGTH = 100
     let retailerQuery = supabase
       .from('profiles')
       .select('id, user_name, business_name, phone_number, phone')
       .eq('role', 'RETAILER')
-    if (q) retailerQuery = retailerQuery.or(`user_name.ilike.%${q}%,business_name.ilike.%${q}%,phone.ilike.%${q}%,phone_number.ilike.%${q}%`)
+    if (q) {
+      const sanitizedQ = q.slice(0, MAX_SEARCH_LENGTH).replace(/[%_\\]/g, (match) => `\\${match}`)
+      retailerQuery = retailerQuery.or(`user_name.ilike.%${sanitizedQ}%,business_name.ilike.%${sanitizedQ}%,phone.ilike.%${sanitizedQ}%,phone_number.ilike.%${sanitizedQ}%`)
+    }
     const { data: retailers, error } = await retailerQuery
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
@@ -62,6 +68,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
 
 

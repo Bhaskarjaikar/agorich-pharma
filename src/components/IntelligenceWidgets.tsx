@@ -107,7 +107,7 @@ export function DemandHeatmapWidget({ darkMode = true }: { darkMode?: boolean })
   }))
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -117,7 +117,7 @@ export function DemandHeatmapWidget({ darkMode = true }: { darkMode?: boolean })
             </CardTitle>
           </div>
         </div>
-        <CardDescription className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+        <CardDescription className={darkMode ? 'text-muted-foreground' : 'text-slate-500'}>
           Real-time order intensity by district
         </CardDescription>
       </CardHeader>
@@ -125,7 +125,7 @@ export function DemandHeatmapWidget({ darkMode = true }: { darkMode?: boolean })
         {loading ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className={`h-12 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-12 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
@@ -134,7 +134,7 @@ export function DemandHeatmapWidget({ darkMode = true }: { darkMode?: boolean })
               <div
                 key={idx}
                 className={`p-4 rounded-lg border ${
-                  darkMode ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-slate-50'
+                  darkMode ? 'border-border bg-card/50' : 'border-slate-200 bg-slate-50'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -146,7 +146,7 @@ export function DemandHeatmapWidget({ darkMode = true }: { darkMode?: boolean })
                 <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {district.total_orders.toLocaleString()}
                 </div>
-                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                   {district.total_units.toLocaleString()} units
                 </div>
                 <div className="flex items-center mt-1">
@@ -159,22 +159,22 @@ export function DemandHeatmapWidget({ darkMode = true }: { darkMode?: boolean })
             ))}
           </div>
         )}
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-700/50">
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/50">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-red-600" />
-            <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Very High</span>
+            <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Very High</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-orange-500" />
-            <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>High</span>
+            <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>High</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-yellow-500" />
-            <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Medium</span>
+            <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Medium</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Low</span>
+            <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Low</span>
           </div>
         </div>
       </CardContent>
@@ -221,7 +221,7 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
   }
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
             Refresh
           </Button>
         </div>
-        <CardDescription className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+        <CardDescription className={darkMode ? 'text-muted-foreground' : 'text-slate-500'}>
           Priority-based manufacturing recommendations
         </CardDescription>
       </CardHeader>
@@ -248,7 +248,7 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className={`h-20 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-20 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
@@ -257,7 +257,7 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
               <div
                 key={rec.id}
                 className={`p-4 rounded-lg border ${
-                  darkMode ? 'border-slate-700 bg-slate-700/50' : 'border-slate-200 bg-slate-50'
+                  darkMode ? 'border-border bg-card/50' : 'border-slate-200 bg-slate-50'
                 }`}
               >
                 <div className="flex items-start justify-between">
@@ -270,7 +270,7 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
                         {rec.priority_level}
                       </Badge>
                     </div>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <p className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
                       <span className="text-emerald-500 font-bold">
                         Manufacture {rec.recommended_production_qty.toLocaleString()} units immediately
                       </span>
@@ -280,12 +280,12 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
                     <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                       {rec.total_current_stock.toLocaleString()}
                     </div>
-                    <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                       Current Stock
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-slate-700/50">
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/50">
                   <div className="flex items-center gap-1">
                     <TrendUp className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
                     <span className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
@@ -293,8 +293,8 @@ export function ManufacturingOracleWidget({ darkMode = true }: { darkMode?: bool
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <MapPin className={`w-4 h-4 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} />
-                    <span className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <MapPin className={`w-4 h-4 ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`} />
+                    <span className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                       {rec.territory}
                     </span>
                   </div>
@@ -338,7 +338,7 @@ export function RiskRadarWidget({ darkMode = true }: { darkMode?: boolean }) {
   ]
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader>
         <div className="flex items-center gap-2">
           <Warning className={`w-5 h-5 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
@@ -346,7 +346,7 @@ export function RiskRadarWidget({ darkMode = true }: { darkMode?: boolean }) {
             Risk Radar
           </CardTitle>
         </div>
-        <CardDescription className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+        <CardDescription className={darkMode ? 'text-muted-foreground' : 'text-slate-500'}>
           Distributors/Retailers with falling credit scores
         </CardDescription>
       </CardHeader>
@@ -354,7 +354,7 @@ export function RiskRadarWidget({ darkMode = true }: { darkMode?: boolean }) {
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className={`h-16 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-16 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
@@ -371,7 +371,7 @@ export function RiskRadarWidget({ darkMode = true }: { darkMode?: boolean }) {
                     <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                       {risk.user.business_name || risk.user.user_name}
                     </h4>
-                    <p className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <p className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
                       {risk.user.user_name}
                     </p>
                   </div>
@@ -382,7 +382,7 @@ export function RiskRadarWidget({ darkMode = true }: { darkMode?: boolean }) {
                         {risk.score_change}
                       </span>
                     </div>
-                    <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <div className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                       {risk.previous_score} → {risk.new_score}
                     </div>
                   </div>
@@ -391,7 +391,7 @@ export function RiskRadarWidget({ darkMode = true }: { darkMode?: boolean }) {
                   <Badge variant="outline" className={darkMode ? 'border-red-500/30 text-red-400' : 'border-red-200 text-red-600'}>
                     {risk.reason_code}
                   </Badge>
-                  <span className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <span className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                     {new Date(risk.created_at).toLocaleDateString('en-IN')}
                   </span>
                 </div>
@@ -460,7 +460,7 @@ export function SeasonalSpikeAlertWidget({ darkMode = true }: { darkMode?: boole
             <div className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
               {topSpike.current_demand.toLocaleString()}
             </div>
-            <div className={`text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            <div className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
               Current (vs {topSpike.baseline_demand.toLocaleString()} baseline)
             </div>
           </div>

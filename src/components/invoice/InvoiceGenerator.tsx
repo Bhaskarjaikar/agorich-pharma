@@ -12,7 +12,7 @@ import {
   CheckCircle,
   Trash
 } from '@phosphor-icons/react'
-import InvoiceHeader from './InvoiceHeader'
+import { InvoiceHeader } from './InvoiceHeader'
 import ItemsTable from './ItemsTable'
 import TaxSummary from './TaxSummary'
 import PaymentDetails from './PaymentDetails'

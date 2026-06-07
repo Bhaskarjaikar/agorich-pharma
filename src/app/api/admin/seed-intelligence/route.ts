@@ -1,30 +1,18 @@
-import { NextResponse } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase/server'
+import { verifyAdmin } from '@/lib/api-security'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
-
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    if (sessionError || !session) {
+    const authResult = await verifyAdmin(request)
+    if ('headers' in authResult) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Unauthorized. Admin access required.' },
         { status: 401 }
       )
     }
+
+    const supabase = await createServerClient()
 
     const results = {
       analytics_snapshots: 0,
@@ -198,20 +186,21 @@ async function generateManufacturingRecommendations(supabase: any): Promise<numb
 
       const { error } = await supabase
         .from('manufacturing_recommendations')
-        .upsert({
+        .insert({
           recommendation_number: recommendationNumber,
           product_id: product.id,
-          product_name: product.name,
-          territory: 'North Bihar',
-          total_demand_30days: totalDemand,
-          total_current_stock: totalStock,
-          recommended_production_qty: recommendedQty,
-          safety_stock_multiplier: safetyMultiplier,
-          priority_score: priorityScore,
+          recommended_quantity: recommendedQty,
+          current_stock: totalStock,
+          predicted_demand: totalDemand,
           priority_level: priorityLevel,
+          priority_score: priorityScore,
+          reasoning: {
+            safety_multiplier: safetyMultiplier,
+            product_name: product.name,
+            monthly_demand: totalDemand,
+            stock_gap: recommendedQty
+          },
           status: 'PENDING'
-        }, {
-          onConflict: 'recommendation_number'
         })
 
       if (!error) count++
@@ -224,64 +213,53 @@ async function generateManufacturingRecommendations(supabase: any): Promise<numb
 async function calculateInitialCreditScores(supabase: any): Promise<number> {
   let count = 0
 
-  const { data: distributors } = await supabase
+  const { data: retailers } = await supabase
     .from('profiles')
-    .select('*')
-    .eq('role', 'DISTRIBUTOR')
+    .select('id, user_name, business_name')
+    .eq('role', 'RETAILER')
 
-  for (const distributor of distributors || []) {
+  for (const retailer of retailers || []) {
     const { data: invoices } = await supabase
       .from('invoices')
-      .select('grand_total, status, due_date, invoice_date')
-      .eq('customer_id', distributor.id)
+      .select('grand_total, payment_amount, due_date, status')
+      .eq('customer_id', retailer.id)
 
-    let totalBalance = 0
-    let redZoneBalance = 0
-    const today = new Date()
+    const totalInvoices = invoices?.length || 0
+    const totalRevenue = invoices?.reduce((sum: number, inv: any) => sum + (inv.grand_total || 0), 0) || 0
+    const paidInvoices = invoices?.filter((inv: any) => inv.status === 'PAID').length || 0
+    const paymentRatio = totalInvoices > 0 ? paidInvoices / totalInvoices : 0.5
 
-    for (const invoice of invoices || []) {
-      if (invoice.status === 'PAID') continue
+    const overdueInvoices = invoices?.filter((inv: any) => {
+      if (!inv.due_date || inv.status === 'PAID') return false
+      return new Date(inv.due_date) < new Date()
+    }).length || 0
 
-      const invoiceAmount = invoice.grand_total || 0
-      totalBalance += invoiceAmount
-
-      const dueDate = new Date(invoice.due_date || invoice.invoice_date)
-      const daysPastDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24))
-
-      if (daysPastDue > 90) {
-        redZoneBalance += invoiceAmount
-      }
-    }
-
-    let creditScore = distributor.credit_score || 750
-    const redZonePercentage = totalBalance > 0 ? (redZoneBalance / totalBalance) * 100 : 0
-
-    if (redZonePercentage >= 40) {
-      const scoreDecrease = Math.min(100, Math.floor(redZonePercentage / 2))
-      creditScore = Math.max(300, 750 - scoreDecrease)
-    }
+    const score = Math.max(300, Math.min(900, Math.round(
+      600 + 
+      (paymentRatio * 200) +
+      (Math.min(totalRevenue / 100000, 1) * 100) -
+      (overdueInvoices * 25)
+    )))
 
     const { error } = await supabase
-      .from('profiles')
-      .update({
-        credit_score: creditScore,
-        credit_score_updated_at: new Date().toISOString(),
-        credit_limit: creditScore >= 700 ? 100000 : creditScore >= 600 ? 50000 : 25000
+      .from('credit_scores')
+      .upsert({
+        retailer_id: retailer.id,
+        score,
+        score_band: score >= 750 ? 'EXCELLENT' : score >= 650 ? 'GOOD' : score >= 550 ? 'FAIR' : 'POOR',
+        factors: {
+          payment_ratio: paymentRatio,
+          total_revenue: totalRevenue,
+          overdue_invoices: overdueInvoices,
+          total_invoices: totalInvoices,
+          retailer_name: retailer.business_name || retailer.user_name
+        },
+        calculated_at: new Date().toISOString()
+      }, {
+        onConflict: 'retailer_id'
       })
-      .eq('id', distributor.id)
 
-    if (!error) {
-      await supabase.from('credit_score_history').insert({
-        user_id: distributor.id,
-        previous_score: distributor.credit_score || 750,
-        new_score: creditScore,
-        score_change: creditScore - (distributor.credit_score || 750),
-        reason_code: 'INITIAL_SCORE_CALCULATION',
-        reason_description: `Initial credit score calculated. Red zone: ${redZonePercentage.toFixed(1)}%`,
-        metadata: { red_zone_percentage: redZonePercentage }
-      })
-      count++
-    }
+    if (!error) count++
   }
 
   return count
@@ -290,84 +268,59 @@ async function calculateInitialCreditScores(supabase: any): Promise<number> {
 async function checkStockoutRisks(supabase: any): Promise<number> {
   let count = 0
 
-  const { data: distributors } = await supabase
-    .from('profiles')
+  const { data: products } = await supabase
+    .from('products')
     .select('*')
-    .eq('role', 'DISTRIBUTOR')
+    .eq('status', 'ACTIVE')
 
-  for (const distributor of distributors || []) {
+  for (const product of products || []) {
     const { data: inventory } = await supabase
       .from('distributor_inventory')
-      .select('*, products(*)')
-      .eq('distributor_id', distributor.id)
+      .select('quantity')
+      .eq('product_id', product.id)
 
-    for (const inv of inventory || []) {
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      const { data: orders } = await supabase
-        .from('routed_orders')
-        .select(`
-          order_id,
-          orders!inner(
-            order_items!inner(product_id, quantity)
-          )
-        `)
-        .eq('distributor_id', distributor.id)
-        .gte('created_at', thirtyDaysAgo.toISOString())
+    const totalStock = inventory?.reduce((sum: number, inv: any) => sum + (inv.quantity || 0), 0) || 0
 
-      const totalUnits = orders?.reduce((sum: number, ro: any) => {
-        return sum + (ro.orders?.order_items?.reduce((itemSum: number, item: any) => 
-          item.product_id === inv.product_id ? itemSum + (item.quantity || 0) : itemSum
-        , 0) || 0)
-      }, 0) || 0
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const { data: recentOrders } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        order_items!inner(product_id, quantity)
+      `)
+      .eq('order_items.product_id', product.id)
+      .gte('created_at', sevenDaysAgo.toISOString())
 
-      const depletionRate = totalUnits / 30
-      const daysToStockout = depletionRate > 0 ? Math.floor(inv.quantity / depletionRate) : 999
+    const recentDemand = recentOrders?.reduce((sum: number, order: any) => {
+      return sum + (order.order_items?.reduce((itemSum: number, item: any) => 
+        item.product_id === product.id ? itemSum + (item.quantity || 0) : itemSum
+      , 0) || 0)
+    }, 0) || 0
 
-      if (daysToStockout < 15 && inv.quantity > 0) {
-        let alertType: string
-        let severity: string
+    const daysOfStock = recentDemand > 0 ? (totalStock / recentDemand) * 7 : 999
 
-        if (inv.quantity === 0) {
-          alertType = 'OUT_OF_STOCK'
-          severity = 'CRITICAL'
-        } else if (daysToStockout <= 3) {
-          alertType = 'CRITICAL_STOCK'
-          severity = 'HIGH'
-        } else if (daysToStockout <= 7) {
-          alertType = 'LOW_STOCK'
-          severity = 'MEDIUM'
-        } else {
-          alertType = 'LOW_STOCK'
-          severity = 'LOW'
-        }
+    if (daysOfStock < 14) {
+      let severity = 'LOW'
+      if (daysOfStock < 3) severity = 'CRITICAL'
+      else if (daysOfStock < 7) severity = 'HIGH'
+      else if (daysOfStock < 14) severity = 'MEDIUM'
 
-        const { data: existing } = await supabase
-          .from('stockout_risk_alerts')
-          .select('*')
-          .eq('distributor_id', distributor.id)
-          .eq('product_id', inv.product_id)
-          .eq('status', 'OPEN')
-          .single()
+      const { error } = await supabase
+        .from('stockout_alerts')
+        .insert({
+          product_id: product.id,
+          severity,
+          current_stock: totalStock,
+          predicted_stockout_date: new Date(Date.now() + daysOfStock * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          recommendation: `Reorder ${product.name}. Only ${daysOfStock.toFixed(1)} days of stock remaining.`,
+          metadata: {
+            product_name: product.name,
+            recent_demand: recentDemand,
+            days_of_stock: daysOfStock
+          }
+        })
 
-        if (!existing) {
-          const { error } = await supabase
-            .from('stockout_risk_alerts')
-            .insert({
-              alert_type: alertType,
-              severity: severity,
-              distributor_id: distributor.id,
-              product_id: inv.product_id,
-              current_stock: inv.quantity,
-              recommended_reorder_qty: Math.ceil(depletionRate * 30),
-              estimated_days_to_stockout: daysToStockout,
-              pincode: distributor.pincode,
-              territory: distributor.state,
-              status: 'OPEN'
-            })
-
-          if (!error) count++
-        }
-      }
+      if (!error) count++
     }
   }
 

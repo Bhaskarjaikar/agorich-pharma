@@ -100,30 +100,30 @@ export default function SupportHub() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/distributor" className="flex items-center text-gray-600 hover:text-gray-900">
+              <Link href="/distributor" className="flex items-center text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Dashboard
               </Link>
-              <div className="w-px h-6 bg-gray-300" />
+              <div className="w-px h-6 bg-border" />
               <div className="flex items-center space-x-2">
                 <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
                   <Heart className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Support Hub</h1>
-                  <p className="text-sm text-gray-500">Get help and connect with our team</p>
+                  <h1 className="text-xl font-semibold text-foreground">Support Hub</h1>
+                  <p className="text-sm text-muted-foreground">Get help and connect with our team</p>
                 </div>
               </div>
             </div>
             
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-input text-muted-foreground hover:bg-muted">
                 <Phone className="w-4 h-4 mr-2" />
                 Call Support
               </Button>
@@ -148,13 +148,13 @@ export default function SupportHub() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + index * 0.1 }}
               >
-                <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer">
+                <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer">
                   <CardContent className="p-6 text-center">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <action.icon className="w-6 h-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <action.icon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">{action.title}</h3>
-                    <p className="text-sm text-gray-600">{action.description}</p>
+                    <h3 className="font-semibold text-foreground mb-2">{action.title}</h3>
+                    <p className="text-sm text-muted-foreground">{action.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -200,13 +200,13 @@ export default function SupportHub() {
           >
             {/* Chat Messages */}
             <div className="lg:col-span-2">
-              <Card className="border-0 shadow-lg h-[600px] flex flex-col">
+              <Card className="bg-card border-border shadow-lg h-[600px] flex flex-col">
                 <CardHeader className="border-b">
-                  <CardTitle className="flex items-center">
-                    <ChatCircle className="w-5 h-5 mr-2 text-blue-600" />
+                  <CardTitle className="flex items-center text-foreground">
+                    <ChatCircle className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                     Live Chat
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-muted-foreground">
                     Chat with your MR and our support team
                   </CardDescription>
                 </CardHeader>
@@ -233,15 +233,15 @@ export default function SupportHub() {
                           </div>
                           <div className={`p-3 rounded-lg ${
                             message.sender === 'user' 
-                              ? 'bg-blue-600 text-white' 
+                              ? 'bg-blue-600 text-white'
                               : message.sender === 'mr'
-                              ? 'bg-gray-100 text-gray-900'
-                              : 'bg-purple-100 text-purple-900'
+                              ? 'bg-muted text-foreground'
+                              : 'bg-purple-100 dark:bg-purple-950/30 text-purple-900 dark:text-purple-100'
                           }`}>
                             <p className="text-sm font-medium mb-1">{message.name}</p>
                             <p className="text-sm">{message.message}</p>
                             <p className={`text-xs mt-1 ${
-                              message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
+                              message.sender === 'user' ? 'text-blue-100' : 'text-muted-foreground'
                             }`}>
                               {message.time}
                             </p>
@@ -278,60 +278,60 @@ export default function SupportHub() {
 
             {/* Chat Info */}
             <div>
-              <Card className="border-0 shadow-lg">
+              <Card className="bg-card border-border shadow-lg">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <User className="w-5 h-5 mr-2 text-green-600" />
+                  <CardTitle className="flex items-center text-foreground">
+                    <User className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
                     Your Support Team
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                     <div className="flex items-center space-x-3 mb-2">
                       <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold">AK</span>
+                        <span className="text-primary-foreground font-semibold">AK</span>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Amit Kumar</h4>
-                        <p className="text-sm text-gray-600">Your Medical Representative</p>
+                        <h4 className="font-semibold text-foreground">Amit Kumar</h4>
+                        <p className="text-sm text-muted-foreground">Your Medical Representative</p>
                       </div>
                     </div>
-                    <div className="flex items-center text-sm text-green-600">
+                    <div className="flex items-center text-sm text-green-600 dark:text-green-400">
                       <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                       Online
                     </div>
                   </div>
 
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <div className="flex items-center space-x-3 mb-2">
                       <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-semibold">🤖</span>
+                        <span className="text-primary-foreground font-semibold">🤖</span>
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">Agorich Bot</h4>
-                        <p className="text-sm text-gray-600">AI Assistant</p>
+                        <h4 className="font-semibold text-foreground">Agorich Bot</h4>
+                        <p className="text-sm text-muted-foreground">AI Assistant</p>
                       </div>
                     </div>
-                    <div className="flex items-center text-sm text-blue-600">
+                    <div className="flex items-center text-sm text-blue-600 dark:text-blue-400">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
                       Always Available
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">Quick Stats</h4>
+                  <div className="bg-muted/50 border border-border rounded-lg p-4">
+                    <h4 className="font-semibold text-foreground mb-2">Quick Stats</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Response Time</span>
-                        <span className="font-medium">&lt; 2 minutes</span>
+                        <span className="text-muted-foreground">Response Time</span>
+                        <span className="font-medium text-foreground">&lt; 2 minutes</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Satisfaction</span>
-                        <span className="font-medium">98%</span>
+                        <span className="text-muted-foreground">Satisfaction</span>
+                        <span className="font-medium text-foreground">98%</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Available</span>
-                        <span className="font-medium">24/7</span>
+                        <span className="text-muted-foreground">Available</span>
+                        <span className="font-medium text-foreground">24/7</span>
                       </div>
                     </div>
                   </div>
@@ -350,20 +350,20 @@ export default function SupportHub() {
             className="space-y-8"
           >
             {/* Create New Ticket */}
-            <Card className="border-0 shadow-lg">
+            <Card className="bg-card border-border shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Plus className="w-5 h-5 mr-2 text-blue-600" />
+                <CardTitle className="flex items-center text-foreground">
+                  <Plus className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
                   Create New Ticket
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   Submit a detailed support request
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
                       Subject
                     </label>
                     <Input
@@ -373,7 +373,7 @@ export default function SupportHub() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-muted-foreground mb-2">
                       Priority
                     </label>
                     <Select value={newTicket.priority} onValueChange={(value) => setNewTicket({...newTicket, priority: value})}>
@@ -390,7 +390,7 @@ export default function SupportHub() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Description
                   </label>
                   <Textarea
@@ -401,7 +401,7 @@ export default function SupportHub() {
                   />
                 </div>
                 <div className="flex justify-end">
-                  <Button onClick={handleCreateTicket} className="trust-gradient text-white">
+                  <Button onClick={handleCreateTicket} className="trust-gradient text-primary-foreground">
                     Create Ticket
                   </Button>
                 </div>
@@ -409,13 +409,13 @@ export default function SupportHub() {
             </Card>
 
             {/* Existing Tickets */}
-            <Card className="border-0 shadow-lg">
+            <Card className="bg-card border-border shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-green-600" />
+                <CardTitle className="flex items-center text-foreground">
+                  <FileText className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
                   Your Support Tickets
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   Track the status of your support requests
                 </CardDescription>
               </CardHeader>
@@ -427,15 +427,15 @@ export default function SupportHub() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
                     >
                       <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-blue-600" />
+                        <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900">{ticket.subject}</h4>
-                          <p className="text-sm text-gray-500">Created: {ticket.created}</p>
+                          <h4 className="font-semibold text-foreground">{ticket.subject}</h4>
+                          <p className="text-sm text-muted-foreground">Created: {ticket.created}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
@@ -465,13 +465,13 @@ export default function SupportHub() {
             transition={{ delay: 0.2 }}
             className="space-y-6"
           >
-            <Card className="border-0 shadow-lg">
+            <Card className="bg-card border-border shadow-lg">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Headphones className="w-5 h-5 mr-2 text-purple-600" />
+                <CardTitle className="flex items-center text-foreground">
+                  <Headphones className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
                   Frequently Asked Questions
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   Find quick answers to common questions
                 </CardDescription>
               </CardHeader>
@@ -483,10 +483,10 @@ export default function SupportHub() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="p-4 bg-gray-50 rounded-lg"
+                      className="p-4 bg-muted/50 rounded-lg"
                     >
-                      <h4 className="font-semibold text-gray-900 mb-2">{faq.question}</h4>
-                      <p className="text-sm text-gray-600">{faq.answer}</p>
+                      <h4 className="font-semibold text-foreground mb-2">{faq.question}</h4>
+                      <p className="text-sm text-muted-foreground">{faq.answer}</p>
                     </motion.div>
                   ))}
                 </div>

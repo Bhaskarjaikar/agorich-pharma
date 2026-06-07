@@ -156,6 +156,17 @@
         "settings": "सेटिंग्स"
       }
     },
+    "distributor": {
+      "title": "डिस्ट्रीब्यूटर डैशबोर्ड",
+      "menu": {
+        "dashboard": "डैशबोर्ड",
+        "inventory": "मेरे प्रोडक्ट्स",
+        "invoices": "इनवॉइस",
+        "createInvoice": "इनवॉइस बनाएं",
+        "referrals": "रेफरल",
+        "settings": "सेटिंग्स"
+      }
+    },
     "admin": {
       "title": "एडमिन डैशबोर्ड",
       "overview": "अवलोकन",

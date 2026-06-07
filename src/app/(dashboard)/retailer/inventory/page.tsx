@@ -288,9 +288,9 @@ export default function InventoryPage() {
     <div className={`min-h-screen relative overflow-hidden ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse ${darkMode ? 'bg-slate-800/20' : 'bg-slate-200/50'}`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000 ${darkMode ? 'bg-slate-800/20' : 'bg-slate-200/50'}`}></div>
-        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse delay-500 ${darkMode ? 'bg-slate-800/10' : 'bg-slate-200/30'}`}></div>
+        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-3xl animate-pulse ${darkMode ? 'bg-background/20' : 'bg-slate-200/50'}`}></div>
+        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000 ${darkMode ? 'bg-background/20' : 'bg-slate-200/50'}`}></div>
+        <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse delay-500 ${darkMode ? 'bg-background/10' : 'bg-slate-200/30'}`}></div>
       </div>
 
       {/* Header */}
@@ -366,14 +366,14 @@ export default function InventoryPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className={`border-0 shadow-xl ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+            <Card className={`border-0 shadow-xl ${darkMode ? 'bg-background' : 'bg-white'}`}>
               <CardContent className="p-3 md:p-6">
                 <div className="flex items-center">
                   <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center mr-2 md:mr-4 flex-shrink-0 ${darkMode ? 'bg-white/20' : 'bg-slate-100'}`}>
                     <Package className="w-4 h-4 md:w-6 md:h-6 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] md:text-sm text-slate-400">Total Products</p>
+                    <p className="text-[10px] md:text-sm text-muted-foreground">Total Products</p>
                     <p className="text-lg md:text-3xl font-bold text-white">{products.length}</p>
                   </div>
                 </div>
@@ -452,21 +452,21 @@ export default function InventoryPage() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <MagnifyingGlass className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+                  <MagnifyingGlass className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                   <Input
                     placeholder="Search products by name, manufacturer, or category..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className={`pl-12 h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`pl-12 h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
               </div>
               <div className="flex gap-3">
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className={`w-48 h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 focus:bg-slate-50 focus:border-slate-400'}`}>
+                  <SelectTrigger className={`w-48 h-12 ${darkMode ? 'bg-background border-border text-white focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 focus:bg-slate-50 focus:border-slate-400'}`}>
                     <SelectValue placeholder="All Categories" />
                   </SelectTrigger>
-                  <SelectContent className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                  <SelectContent className={`${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
                     <SelectItem value="all">All Categories</SelectItem>
                     {categories.map(category => (
                       <SelectItem key={category} value={category}>{category}</SelectItem>
@@ -512,7 +512,7 @@ export default function InventoryPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleEditProduct(product)}
-                          className="bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600"
+                          className="bg-card border-slate-600 text-slate-200 hover:bg-slate-600"
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
@@ -578,11 +578,11 @@ export default function InventoryPage() {
         {filteredProducts.length === 0 && (
           <Card className="bg-white/10 backdrop-blur-sm border-white/20 shadow-xl">
             <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-20 h-20 bg-card rounded-full flex items-center justify-center mx-auto mb-6">
                 <Package className="w-10 h-10 text-white" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-3">No products found</h3>
-              <p className="text-slate-400 mb-6 text-lg">
+              <p className="text-muted-foreground mb-6 text-lg">
                 {searchQuery || categoryFilter !== 'all' 
                   ? 'Try adjusting your search or filter criteria.'
                   : 'Add your first product to get started.'
@@ -590,7 +590,7 @@ export default function InventoryPage() {
               </p>
               <Button 
                 onClick={() => setShowAddProduct(true)}
-                className={`shadow-lg hover:shadow-xl transition-all duration-300 ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-900'}`}
+                className={`shadow-lg hover:shadow-xl transition-all duration-300 ${darkMode ? 'bg-background hover:bg-card text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-900'}`}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
@@ -635,7 +635,7 @@ export default function InventoryPage() {
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
                     placeholder="Enter product name"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -647,7 +647,7 @@ export default function InventoryPage() {
                     value={newProduct.category}
                     onChange={(e) => setNewProduct({...newProduct, category: e.target.value})}
                     placeholder="e.g., Pain Relief, Antibiotics"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -659,7 +659,7 @@ export default function InventoryPage() {
                     value={newProduct.manufacturer}
                     onChange={(e) => setNewProduct({...newProduct, manufacturer: e.target.value})}
                     placeholder="Enter manufacturer name"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -673,7 +673,7 @@ export default function InventoryPage() {
                       value={newProduct.mrp}
                       onChange={(e) => setNewProduct({...newProduct, mrp: Number(e.target.value)})}
                       placeholder="0"
-                      className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                      className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                     />
                   </div>
                   <div>
@@ -685,7 +685,7 @@ export default function InventoryPage() {
                       value={newProduct.stock}
                       onChange={(e) => setNewProduct({...newProduct, stock: Number(e.target.value)})}
                       placeholder="0"
-                      className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                      className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                     />
                   </div>
                 </div>
@@ -715,7 +715,7 @@ export default function InventoryPage() {
                     value={newProduct.composition}
                     onChange={(e) => setNewProduct({...newProduct, composition: e.target.value})}
                     placeholder="e.g., Paracetamol 500mg"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -727,7 +727,7 @@ export default function InventoryPage() {
                     value={newProduct.dosage}
                     onChange={(e) => setNewProduct({...newProduct, dosage: e.target.value})}
                     placeholder="e.g., 1-2 tablets every 4-6 hours"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -739,7 +739,7 @@ export default function InventoryPage() {
                     value={newProduct.indications}
                     onChange={(e) => setNewProduct({...newProduct, indications: e.target.value})}
                     placeholder="e.g., Fever, headache, pain"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -751,7 +751,7 @@ export default function InventoryPage() {
                     value={newProduct.contraindications}
                     onChange={(e) => setNewProduct({...newProduct, contraindications: e.target.value})}
                     placeholder="e.g., Liver disease, hypersensitivity"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -763,7 +763,7 @@ export default function InventoryPage() {
                     value={newProduct.sideEffects}
                     onChange={(e) => setNewProduct({...newProduct, sideEffects: e.target.value})}
                     placeholder="e.g., Nausea, dizziness"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -775,7 +775,7 @@ export default function InventoryPage() {
                     value={newProduct.therapeuticClass}
                     onChange={(e) => setNewProduct({...newProduct, therapeuticClass: e.target.value})}
                     placeholder="e.g., Analgesic, Antibiotic"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
               </div>
@@ -794,7 +794,7 @@ export default function InventoryPage() {
                     value={newProduct.packSize}
                     onChange={(e) => setNewProduct({...newProduct, packSize: e.target.value})}
                     placeholder="e.g., 10 tablets"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -806,7 +806,7 @@ export default function InventoryPage() {
                     type="date"
                     value={newProduct.expiryDate}
                     onChange={(e) => setNewProduct({...newProduct, expiryDate: e.target.value})}
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
 
@@ -818,7 +818,7 @@ export default function InventoryPage() {
                     value={newProduct.batchNumber}
                     onChange={(e) => setNewProduct({...newProduct, batchNumber: e.target.value})}
                     placeholder="e.g., PC2025001"
-                    className={`h-12 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:bg-slate-700 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400 focus:bg-slate-50 focus:border-slate-400'}`}
+                    className={`h-12 ${darkMode ? 'bg-background border-border text-white placeholder:text-muted-foreground focus:bg-card focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-muted-foreground focus:bg-slate-50 focus:border-slate-400'}`}
                   />
                 </div>
               </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
 import { supabase } from '@/lib/supabase-client'
@@ -9,18 +9,6 @@ export default function Protected({ children }: { children: ReactNode }) {
   const { user, loading, profile } = useSupabaseAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const [timeoutReached, setTimeoutReached] = useState(false)
-
-  useEffect(() => {
-    // Safety timeout - if loading takes too long, show content anyway
-    const timer = setTimeout(() => {
-      if (loading) {
-        setTimeoutReached(true)
-      }
-    }, 2000)
-
-    return () => clearTimeout(timer)
-  }, [loading])
 
   useEffect(() => {
     if (loading) return
@@ -32,11 +20,9 @@ export default function Protected({ children }: { children: ReactNode }) {
       doRedirect()
       return
     }
-    // If logged-in user has no profile (e.g., onboarding deleted), send to onboarding
-    // Skip onboarding for DISTRIBUTOR role
+    // If logged-in user has no profile (e.g., onboarding deleted), send to role-specific onboarding
     const currentPath = pathname || '/'
-    if (!profile && currentPath !== '/onboarding') {
-      // First check if we can get the user's role even without full profile
+    if (!profile && currentPath !== '/onboarding' && currentPath !== '/onboarding/distributor' && currentPath !== '/onboarding/retailer') {
       const checkRoleAndRedirect = async () => {
         if (!user) return
         try {
@@ -45,7 +31,7 @@ export default function Protected({ children }: { children: ReactNode }) {
             .select('role')
             .eq('id', user.id)
             .single()
-          
+
           if (profileData?.role === 'DISTRIBUTOR') {
             console.log('[Protected] User is DISTRIBUTOR, skipping onboarding')
             router.replace('/distributor')
@@ -65,10 +51,13 @@ export default function Protected({ children }: { children: ReactNode }) {
       const getDashboardForRole = (userRole: string) => {
         switch (userRole) {
           case 'SUPER_ADMIN':
-          case 'SALES':
+          case 'ADMIN':
           case 'SUPPORT':
-          case 'LOGISTIC':
             return '/admin'
+          case 'SALES':
+            return '/sales'
+          case 'LOGISTIC':
+            return '/logistic'
           case 'DISTRIBUTOR':
             return '/distributor'
           case 'RETAILER':
@@ -82,7 +71,7 @@ export default function Protected({ children }: { children: ReactNode }) {
       let shouldRedirect = false
       const destination = getDashboardForRole(role)
       
-      if (currentPath.startsWith('/admin') && !['SUPER_ADMIN', 'SALES', 'SUPPORT', 'LOGISTIC'].includes(role)) {
+      if (currentPath.startsWith('/admin') && !['SUPER_ADMIN', 'ADMIN', 'SALES', 'SUPPORT'].includes(role)) {
         shouldRedirect = true
       } else if (currentPath.startsWith('/retailer') && role !== 'RETAILER') {
         shouldRedirect = true
@@ -101,7 +90,7 @@ export default function Protected({ children }: { children: ReactNode }) {
   }, [loading, user, profile, router, pathname])
 
   // Show loading only for initial load, not for navigation
-  if (loading && !timeoutReached && !user) {
+  if (loading && !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

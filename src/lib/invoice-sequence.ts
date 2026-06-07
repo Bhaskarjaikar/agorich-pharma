@@ -37,7 +37,7 @@ export async function acquireInvoiceLock(
   supabase: SupabaseClient
 ): Promise<boolean> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data, error } = await (supabase as any).rpc('acquire_invoice_lock');
     
     if (error) {
@@ -59,7 +59,7 @@ export async function releaseInvoiceLock(
   supabase: SupabaseClient
 ): Promise<boolean> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data, error } = await (supabase as any).rpc('release_invoice_lock');
     
     if (error) {
@@ -112,7 +112,7 @@ export async function generateInvoiceNumber(
   
   try {
     // Get current fiscal year and last sequence
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data: settings, error: settingsError } = await (supabase as any)
       .from('global_settings')
       .select('key, value')
@@ -139,7 +139,7 @@ export async function generateInvoiceNumber(
       newSeq = 1;
       
       // Update fiscal year in settings
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       await (supabase as any)
         .from('global_settings')
         .update({ value: currentFiscalYear, updated_at: new Date().toISOString() })
@@ -150,7 +150,7 @@ export async function generateInvoiceNumber(
     }
     
     // Update sequence atomically
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { error: updateError } = await (supabase as any)
       .from('global_settings')
       .update({ 
@@ -188,7 +188,7 @@ export async function generateInvoiceNumberViaFunction(
   supabase: SupabaseClient
 ): Promise<string> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data, error } = await (supabase as any).rpc('generate_invoice_number');
     
     if (error) {
@@ -215,7 +215,7 @@ export async function generateInvoiceNumberViaFunction(
 export async function previewNextInvoiceNumber(
   supabase: SupabaseClient
 ): Promise<string> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data: settings, error } = await (supabase as any)
     .from('global_settings')
     .select('key, value')
@@ -241,7 +241,7 @@ export async function previewNextInvoiceNumber(
 export async function getInvoiceSettings(
   supabase: SupabaseClient
 ): Promise<Partial<GlobalSettings>> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data: settings, error } = await (supabase as any)
     .from('global_settings')
     .select('key, value');
@@ -280,12 +280,12 @@ export async function updateFiscalYear(
     try {
       // Update fiscal year and reset sequence
       await Promise.all([
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         (supabase as any)
           .from('global_settings')
           .update({ value: newFiscalYear, updated_at: new Date().toISOString() })
           .eq('key', 'current_fiscal_year'),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         (supabase as any)
           .from('global_settings')
           .update({ value: '0', updated_at: new Date().toISOString() })
@@ -345,7 +345,7 @@ export async function generateOrderNumber(
   supabase: SupabaseClient
 ): Promise<string> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const { data, error } = await (supabase as any).rpc('generate_order_id');
     
     if (error) {

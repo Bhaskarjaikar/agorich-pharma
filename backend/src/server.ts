@@ -11,6 +11,7 @@ import inventoryRoutes from './routes/inventoryRoutes';
 import orderRoutes from './routes/orderRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import paymentRoutes from './routes/paymentRoutes';
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/invoices', invoiceRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/payments', paymentRoutes);
 
 app.use('*', (req, res) => {
   return notFoundResponse(res, 'Route not found');

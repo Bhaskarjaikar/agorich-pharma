@@ -74,91 +74,59 @@ export class InventoryService {
   }
 
   async reserveStock(
+    tx: any,
     distributorId: string,
     productId: string,
+    batchId: string,
     quantity: number
   ) {
-    return prisma.$transaction(async (tx: any) => {
-      const availableBatches = await tx.inventoryBatch.findMany({
-        where: {
-          distributorId,
-          productId,
-          availableQty: { gt: 0 },
-          expiryDate: { gt: new Date() },
-        },
-        orderBy: { expiryDate: 'asc' },
-      });
-
-      let remainingQuantity = quantity;
-      const reservations: Array<{ batchId: string; quantity: number }> = [];
-      const updates = [];
-
-      for (const batch of availableBatches) {
-        if (remainingQuantity <= 0) break;
-
-        const toReserve = Math.min(batch.availableQty, remainingQuantity);
-        
-        updates.push(tx.inventoryBatch.update({
-          where: { id: batch.id },
-          data: {
-            availableQty: { decrement: toReserve },
-            reservedQty: { increment: toReserve },
-          },
-        }));
-
-        reservations.push({ batchId: batch.id, quantity: toReserve });
-        remainingQuantity -= toReserve;
-      }
-      
-      await Promise.all(updates);
-
-      if (remainingQuantity > 0) {
-        throw new Error('Insufficient stock available');
-      }
-
-      return reservations;
+    const batch = await tx.inventoryBatch.findUnique({
+      where: { id: batchId },
     });
+
+    if (!batch) {
+      throw new Error('Batch not found');
+    }
+
+    if (batch.availableQty < quantity) {
+      throw new Error('Insufficient stock available');
+    }
+
+    await tx.inventoryBatch.update({
+      where: { id: batchId },
+      data: {
+        availableQty: { decrement: quantity },
+        quantityReserved: { increment: quantity },
+      },
+    });
+
+    return [{ batchId, quantity }];
   }
 
   async releaseStock(
+    tx: any,
     distributorId: string,
     productId: string,
+    batchId: string,
     quantity: number
   ) {
-    return prisma.$transaction(async (tx: any) => {
-      const availableBatches = await tx.inventoryBatch.findMany({
-        where: {
-          distributorId,
-          productId,
-          reservedQty: { gt: 0 }
-        },
-        orderBy: { expiryDate: 'asc' },
-      });
-
-      let remainingQuantity = quantity;
-      const updates = [];
-
-      for (const batch of availableBatches) {
-        if (remainingQuantity <= 0) break;
-        if (batch.reservedQty <= 0) continue;
-
-        const toRelease = Math.min(batch.reservedQty, remainingQuantity);
-        
-        updates.push(tx.inventoryBatch.update({
-          where: { id: batch.id },
-          data: {
-            availableQty: { increment: toRelease },
-            reservedQty: { decrement: toRelease },
-          },
-        }));
-        
-        remainingQuantity -= toRelease;
-      }
-      
-      await Promise.all(updates);
-
-      return { message: 'Stock released successfully' };
+    const batch = await tx.inventoryBatch.findUnique({
+      where: { id: batchId },
     });
+
+    if (!batch) {
+      throw new Error('Batch not found');
+    }
+
+    await tx.inventoryBatch.update({
+      where: { id: batchId },
+      data: {
+        availableQty: { increment: quantity },
+        quantityReserved: { decrement: quantity },
+      },
+    });
+
+    return { message: 'Stock released successfully' };
   }
 
   async deductStock(batchId: string, quantity: number) {

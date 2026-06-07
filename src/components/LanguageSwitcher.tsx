@@ -27,7 +27,7 @@ export default function LanguageSwitcher() {
           className={`h-8 rounded-full px-4 text-xs font-bold transition-all shadow-sm ${
             i18n.language === lang 
               ? "bg-blue-600 text-white shadow-md" 
-              : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+              : "bg-slate-200 dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
           }`}
           aria-pressed={i18n.language === lang}
         >

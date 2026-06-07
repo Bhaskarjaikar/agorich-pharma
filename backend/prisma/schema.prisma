@@ -7,225 +7,594 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProductSource {
+  MARKETPLACE
+  PROPRIETARY
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  SENT
+  PROCESSING
+  PACKING
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  PAID
+  SETTLED
+  REFUNDED
+  FAILED
+}
+
+enum PaymentMethod {
+  RAZORPAY_ONLINE
+  DISTRIBUTOR_DIRECT
+  CREDIT_NOTE
+}
+
+enum GstType {
+  IGST
+  CGST_SGST
+}
+
+enum SettlementStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
 enum UserRole {
   ADMIN
   DISTRIBUTOR
   RETAILER
-  DELIVERY_PARTNER
-}
-
-enum UserStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-}
-
-enum OrderStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-  PACKED
-  DISPATCHED
-  DELIVERED
-  CANCELLED
-}
-
-enum PaymentStatus {
-  UNPAID
-  PARTIAL
-  PAID
-}
-
-enum InvoiceStatus {
-  DRAFT
-  GENERATED
-  SENT
-  PAID
+  LOGISTICS
 }
 
 model User {
-  id               String   @id @default(uuid())
-  email            String   @unique
-  password         String
-  role             UserRole
-  status           UserStatus @default(ACTIVE)
-  name             String
-  mobile           String   @unique
-  gstNumber        String?
-  dlNumber         String?
-  address          String?
-  territory        String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  
-  refreshTokens    RefreshToken[]
-  ordersAsRetailer Order[]       @relation("RetailerOrders")
-  ordersAsDistributor Order[]    @relation("DistributorOrders")
-  inventoryBatches InventoryBatch[]
-  invoicesAsRetailer Invoice[]   @relation("RetailerInvoices")
-  invoicesAsDistributor Invoice[] @relation("DistributorInvoices")
-  
-  @@index([role])
-  @@index([status])
-  @@index([territory])
-}
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  phone                 String    @unique
+  name                  String
+  role                  UserRole
+  passwordHash          String    @map("password_hash")
+  stateCode             String    @map("state_code")
+  gstNumber             String?   @map("gst_number")
+  drugLicenseNumber     String?   @map("drug_license_number")
+  razorpayLinkedAccId   String?   @map("razorpay_linked_acc_id")
+  isActive              Boolean   @default(true) @map("is_active")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
-  userId    String
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ordersAsRetailer      Order[]           @relation("RetailerOrders")
+  ordersAsDistributor   Order[]           @relation("DistributorOrders")
+  invoices              Invoice[]
+  auditLogs             StatusAuditLog[]
+  rollbackLogs          RollbackLog[]
+  wallet                DistributorWallet?
+
+  @@map("users")
 }
 
 model Product {
-  id              String   @id @default(uuid())
-  name            String
-  brand           String?
-  saltComposition String?
-  dosage          String?
-  category        String?
-  gstRate         Decimal  @default(0)
-  mrp             Decimal
-  ptr             Decimal?
-  pts             Decimal?
-  packSize        String?
-  manufacturer    String?
-  status          String   @default("ACTIVE")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  orderItems      OrderItem[]
-  inventoryBatches InventoryBatch[]
-  invoiceItems    InvoiceItem[]
-  
-  @@index([name])
-  @@index([category])
-  @@index([status])
+  id                    String        @id @default(cuid())
+  name                  String
+  genericName           String        @map("generic_name")
+  sku                   String        @unique
+  source                ProductSource
+  productSource         String?       @map("product_source")
+  hsnCode               String        @map("hsn_code")
+  gstRate               Int
+  mrpPaise              Int           @map("mrp_paise")
+  mrp                   Decimal?      @map("mrp")
+  ptr                   Decimal?      @map("ptr")
+  ptd                   Decimal?      @map("ptd")
+  manufacturingCostPaise Int?          @map("manufacturing_cost_paise")
+  isActive              Boolean       @default(true) @map("is_active")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  inventoryBatches      InventoryBatch[]
+  orderItems            OrderItem[]
+
+  @@map("products")
 }
 
 model InventoryBatch {
-  id            String   @id @default(uuid())
-  productId     String
-  distributorId String
-  batchNumber   String
-  expiryDate    DateTime
-  availableQty  Int      @default(0)
-  reservedQty   Int      @default(0)
-  damagedQty    Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  distributor   User     @relation(fields: [distributorId], references: [id], onDelete: Cascade)
-  orderItems    OrderItem[]
-  
-  @@index([productId])
-  @@index([distributorId])
-  @@index([expiryDate])
-  @@index([batchNumber])
-  @@index([distributorId, expiryDate])
-  @@index([distributorId, productId])
-  @@unique([distributorId, productId, batchNumber])
+  id                    String    @id @default(cuid())
+  productId             String    @map("product_id")
+  distributorId         String    @map("distributor_id")
+  batchNumber           String    @map("batch_number")
+  expiryDate            DateTime  @map("expiry_date")
+  manufacturingDate      DateTime? @map("manufacturing_date")
+  quantityTotal         Int       @map("quantity_total")
+  quantityReserved      Int       @default(0) @map("quantity_reserved")
+  quantityAvailable     Int       @map("quantity_available")
+
+  ptrPaise              Int       @map("ptr_paise")
+  ptr                   Decimal?  @map("ptr")
+  ptdPaise              Int       @map("ptd_paise")
+  ptd                   Decimal?  @map("ptd")
+  mrp                   Decimal?  @map("mrp")
+
+  handlingFeePaise      Int?      @map("handling_fee_paise")
+  handlingFeePercent    Int?      @map("handling_fee_percent")
+
+  safetyBufferPercent   Int       @default(10) @map("safety_buffer_percent")
+  stockStatus           String    @default("IN_STOCK") @map("stock_status")
+  isProprietary         Boolean   @default(false) @map("is_proprietary")
+  warehouseLocation     String?   @map("warehouse_location")
+  isActive              Boolean   @default(true) @map("is_active")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  product               Product   @relation(fields: [productId], references: [id])
+  orderItems            OrderItem[]
+  reservations          InventoryReservation[]
+
+  @@unique([productId, distributorId, batchNumber])
+  @@index([productId, expiryDate])
+  @@map("inventory_batches")
+}
+
+model InventoryReservation {
+  id                String    @id @default(cuid())
+  batchId          String    @map("batch_id")
+  orderId          String    @map("order_id")
+  quantityReserved Int       @map("quantity_reserved")
+  reservedBy       String    @map("reserved_by")
+  reservedAt       DateTime  @default(now()) @map("reserved_at")
+  expiresAt        DateTime  @map("expires_at")
+  status           String    @default("RESERVED") @map("status")
+  releasedAt       DateTime? @map("released_at")
+
+  batch            InventoryBatch @relation(fields: [batchId], references: [id])
+
+  @@index([batchId, status])
+  @@index([orderId])
+  @@index([expiresAt])
+  @@map("inventory_reservations")
 }
 
 model Order {
-  id            String      @id @default(uuid())
-  orderNumber   String      @unique
-  retailerId    String
-  distributorId String
-  status        OrderStatus @default(PENDING)
-  totalAmount   Decimal     @default(0)
-  subtotal      Decimal     @default(0)
-  taxAmount     Decimal     @default(0)
-  notes         String?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  
-  retailer      User        @relation("RetailerOrders", fields: [retailerId], references: [id], onDelete: Cascade)
-  distributor   User        @relation("DistributorOrders", fields: [distributorId], references: [id], onDelete: Cascade)
-  items         OrderItem[]
-  invoices      Invoice[]
-  
+  id                    String        @id @default(cuid())
+  orderNumber           String        @unique @map("order_number")
+  retailerId            String        @map("retailer_id")
+  distributorId         String?       @map("distributor_id")
+
+  orderStatus           OrderStatus   @default(DRAFT) @map("order_status")
+  paymentStatus         PaymentStatus @default(PENDING) @map("payment_status")
+
+  subtotalPaise         Int           @default(0) @map("subtotal_paise")
+  totalTaxPaise         Int           @default(0) @map("total_tax_paise")
+  grandTotalPaise       Int           @default(0) @map("grand_total_paise")
+
+  marketplaceAmountPaise    Int       @default(0) @map("marketplace_amount_paise")
+  proprietaryAmountPaise    Int       @default(0) @map("proprietary_amount_paise")
+  distributorPayoutPaise    Int       @default(0) @map("distributor_payout_paise")
+  agorichRevenuePaise       Int       @default(0) @map("agorich_revenue_paise")
+  handlingFeeTotalPaise     Int       @default(0) @map("handling_fee_total_paise")
+
+  gstType               GstType
+
+  razorpayOrderId       String?       @unique @map("razorpay_order_id")
+  razorpayPaymentId     String?       @unique @map("razorpay_payment_id")
+  paymentMethod         PaymentMethod? @map("payment_method")
+
+  idempotencyKey        String?       @unique @map("idempotency_key")
+
+  confirmedAt           DateTime?     @map("confirmed_at")
+  paidAt                DateTime?     @map("paid_at")
+  deliveredAt           DateTime?     @map("delivered_at")
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  retailer              User          @relation("RetailerOrders", fields: [retailerId], references: [id])
+  distributor           User?         @relation("DistributorOrders", fields: [distributorId], references: [id])
+  items                 OrderItem[]
+  invoice               Invoice?
+  settlements           SettlementRecord[]
+  payments              PaymentRecord[]
+  auditLogs             StatusAuditLog[]
+
   @@index([retailerId])
   @@index([distributorId])
-  @@index([status])
-  @@index([createdAt])
-  @@index([distributorId, createdAt])
-  @@index([distributorId, status])
-  @@index([retailerId, createdAt])
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@map("orders")
 }
 
 model OrderItem {
-  id               String         @id @default(uuid())
-  orderId          String
-  productId        String
-  inventoryBatchId String?
-  quantity         Int
-  mrp              Decimal
-  ptr              Decimal?
-  pts              Decimal?
-  gstRate          Decimal
-  total            Decimal
-  createdAt        DateTime       @default(now())
-  
-  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product          Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventoryBatch   InventoryBatch? @relation(fields: [inventoryBatchId], references: [id])
-  
-  @@index([orderId])
-  @@index([productId])
+  id                    String        @id @default(cuid())
+  orderId               String        @map("order_id")
+  productId             String        @map("product_id")
+  batchId               String        @map("batch_id")
+
+  productSource         ProductSource @map("product_source")
+  productName           String        @map("product_name")
+  hsnCode               String        @map("hsn_code")
+
+  quantity              Int
+  unitPricePaise        Int           @map("unit_price_paise")
+  lineTotalPaise        Int           @map("line_total_paise")
+
+  gstRate               Int           @map("gst_rate")
+  taxAmountPaise        Int           @map("tax_amount_paise")
+  igstPaise             Int           @default(0) @map("igst_paise")
+  cgstPaise             Int           @default(0) @map("cgst_paise")
+  sgstPaise             Int           @default(0) @map("sgst_paise")
+
+  distributorSharePaise Int           @map("distributor_share_paise")
+  agorichSharePaise     Int           @map("agorich_share_paise")
+  handlingFeePaise      Int           @default(0) @map("handling_fee_paise")
+
+  createdAt             DateTime      @default(now()) @map("created_at")
+
+  order                 Order         @relation(fields: [orderId], references: [id])
+  product               Product       @relation(fields: [productId], references: [id])
+  batch                 InventoryBatch @relation(fields: [batchId], references: [id])
+
+  @@map("order_items")
 }
 
 model Invoice {
-  id            String        @id @default(uuid())
-  invoiceNumber String        @unique
-  orderId       String?
-  retailerId    String
-  distributorId String
-  status        InvoiceStatus @default(GENERATED)
-  paymentStatus PaymentStatus @default(UNPAID)
-  subtotal      Decimal       @default(0)
-  taxAmount     Decimal       @default(0)
-  totalAmount   Decimal       @default(0)
-  paidAmount    Decimal       @default(0)
-  dueDate       DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  
-  order         Order?        @relation(fields: [orderId], references: [id])
-  retailer      User          @relation("RetailerInvoices", fields: [retailerId], references: [id], onDelete: Cascade)
-  distributor   User          @relation("DistributorInvoices", fields: [distributorId], references: [id], onDelete: Cascade)
-  items         InvoiceItem[]
-  
-  @@index([orderId])
-  @@index([retailerId])
-  @@index([distributorId])
-  @@index([status])
-  @@index([paymentStatus])
-  @@index([createdAt])
-  @@index([retailerId, paymentStatus])
-  @@index([distributorId, paymentStatus])
+  id                    String        @id @default(cuid())
+  invoiceNumber         String        @unique @map("invoice_number")
+  orderId               String        @unique @map("order_id")
+
+  subtotalPaise         Int           @map("subtotal_paise")
+  totalTaxPaise         Int           @map("total_tax_paise")
+  grandTotalPaise       Int           @map("grand_total_paise")
+  balanceDuePaise       Int           @map("balance_due_paise")
+
+  gstType               GstType
+  issuedById            String        @map("issued_by_id")
+  issuedAt              DateTime      @default(now()) @map("issued_at")
+
+  deliveryConfirmedBy    String?       @map("delivery_confirmed_by")
+  authorizedPersonName   String?       @map("authorized_person_name")
+
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  order                 Order         @relation(fields: [orderId], references: [id])
+  issuedBy              User          @relation(fields: [issuedById], references: [id])
+
+  @@map("invoices")
 }
 
-model InvoiceItem {
-  id        String   @id @default(uuid())
-  invoiceId String
-  productId String
-  quantity  Int
-  mrp       Decimal
-  ptr       Decimal?
-  pts       Decimal?
-  gstRate   Decimal
-  subtotal  Decimal
-  taxAmount Decimal
-  total     Decimal
-  
-  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  @@index([invoiceId])
-  @@index([productId])
+model PaymentRecord {
+  id                    String        @id @default(cuid())
+  orderId               String        @map("order_id")
+  razorpayPaymentId     String?       @unique @map("razorpay_payment_id")
+  razorpayOrderId       String?       @map("razorpay_order_id")
+  razorpaySignature      String?       @map("razorpay_signature")
+
+  amountPaise           Int           @map("amount_paise")
+  method                PaymentMethod
+  status                PaymentStatus @default(PENDING)
+
+  idempotencyKey        String        @unique @map("idempotency_key")
+  webhookProcessed      Boolean       @default(false) @map("webhook_processed")
+  webhookReceivedAt     DateTime?     @map("webhook_received_at")
+
+  rawWebhookPayload      Json?         @map("raw_webhook_payload")
+
+  createdAt             DateTime      @default(now()) @map("created_at")
+  updatedAt             DateTime      @updatedAt @map("updated_at")
+
+  order                 Order         @relation(fields: [orderId], references: [id])
+  settlements           SettlementRecord[]
+
+  @@index([orderId])
+  @@map("payment_records")
+}
+
+model SettlementRecord {
+  id                    String            @id @default(cuid())
+  orderId               String            @map("order_id")
+  paymentRecordId       String            @map("payment_record_id")
+  recipientType         String            @map("recipient_type")
+  recipientAccountId    String?           @map("recipient_account_id")
+
+  amountPaise           Int               @map("amount_paise")
+  productSource         ProductSource     @map("product_source")
+  status                SettlementStatus  @default(PENDING)
+
+  razorpayTransferId    String?           @unique @map("razorpay_transfer_id")
+  settledAt             DateTime?         @map("settled_at")
+
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  order                 Order             @relation(fields: [orderId], references: [id])
+  paymentRecord         PaymentRecord     @relation(fields: [paymentRecordId], references: [id])
+
+  @@map("settlement_records")
+}
+
+model StatusAuditLog {
+  id                    String    @id @default(cuid())
+  orderId               String    @map("order_id")
+  changedById           String    @map("changed_by_id")
+
+  entityType            String    @map("entity_type")
+  fromStatus            String    @map("from_status")
+  toStatus              String    @map("to_status")
+  reason                String?
+  metadata              Json?
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  order                 Order     @relation(fields: [orderId], references: [id])
+  changedBy             User      @relation(fields: [changedById], references: [id])
+
+  @@index([orderId])
+  @@index([createdAt])
+  @@map("status_audit_logs")
+}
+
+model RollbackLog {
+  id                    String    @id @default(cuid())
+  orderId               String    @map("order_id")
+  performedById         String    @map("performed_by_id")
+
+  actionType            String    @map("action_type")
+  fromState             Json      @map("from_state")
+  toState               Json      @map("to_state")
+  reason                String
+  approvedBy            String?   @map("approved_by")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  performedBy           User      @relation(fields: [performedById], references: [id])
+
+  @@map("rollback_logs")
+}
+
+model IdempotencyKey {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  response    Json?
+  statusCode  Int?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  @@index([key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+model DistributorWallet {
+  id                       String    @id @default(cuid())
+  distributorId            String    @unique @map("distributor_id")
+  currentBalance           Decimal   @default(0) @map("current_balance")
+  totalDebt                Decimal   @default(0) @map("total_debt")
+  availableForWithdrawal   Decimal   @default(0) @map("available_for_withdrawal")
+  currency                 String    @default("INR")
+  lastTransactionAt        DateTime? @map("last_transaction_at")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  distributor              User               @relation(fields: [distributorId], references: [id])
+  transactions             WalletTransaction[]
+
+  @@map("distributor_wallets")
+}
+
+model WalletTransaction {
+  id              String    @id @default(cuid())
+  walletId        String    @map("wallet_id")
+  transactionType String    @map("transaction_type")
+  amount          Decimal   @map("amount")
+  balanceBefore   Decimal   @map("balance_before")
+  balanceAfter    Decimal   @map("balance_after")
+  referenceType   String?   @map("reference_type")
+  referenceId     String?   @map("reference_id")
+  description     String?
+  metadata        Json?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  wallet          DistributorWallet @relation(fields: [walletId], references: [id])
+
+  @@index([walletId])
+  @@index([transactionType])
+  @@index([referenceType, referenceId])
+  @@map("wallet_transactions")
+}
+
+model RetailerCart {
+  id                  String    @id @default(cuid())
+  retailerId          String    @unique @map("retailer_id")
+  distributorId       String?   @map("distributor_id")
+  distributorName     String?   @map("distributor_name")
+  items               Json      @default("[]")
+  subtotal            Decimal   @default(0) @map("subtotal")
+  deliverySurcharge   Decimal   @default(0) @map("delivery_surcharge")
+  grandTotal          Decimal   @default(0) @map("grand_total")
+  minOrderValue       Decimal   @default(0) @map("min_order_value")
+  expiresAt           DateTime  @map("expires_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  @@map("retailer_carts")
+}
+
+model DistributorAgreement {
+  id                  String    @id @default(cuid())
+  distributorId       String    @unique @map("distributor_id")
+  creditCycleDays    Int       @default(30) @map("credit_cycle_days")
+  lateFeePct         Decimal   @default(2) @map("late_fee_pct")
+  maxCreditLimit     Decimal   @default(100000) @map("max_credit_limit")
+  signedAt           DateTime  @default(now()) @map("signed_at")
+  docUrl             String?   @map("doc_url")
+  isActive           Boolean   @default(true) @map("is_active")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  @@map("distributor_agreements")
+}
+
+model DiscountCredit {
+  id                  String    @id @default(cuid())
+  distributorId       String    @map("distributor_id")
+  amount             Decimal   @map("amount")
+  earnedAt           DateTime  @default(now()) @map("earned_at")
+  usedAt             DateTime? @map("used_at")
+  usedForOrderId     String?   @map("used_for_order_id")
+  expiresAt          DateTime  @map("expires_at")
+  isActive           Boolean   @default(true) @map("is_active")
+
+  @@index([distributorId])
+  @@index([expiresAt])
+  @@map("discount_credits")
+}
+
+model AdminActionsLog {
+  id                    String    @id @default(cuid())
+  adminId              String    @map("admin_id")
+  actionType           String    @map("action_type")
+  relatedDistributorId  String?   @map("related_distributor_id")
+  relatedOrderId       String?   @map("related_order_id")
+  reason               String?
+  metadata              Json?
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  @@index([adminId])
+  @@index([actionType])
+  @@map("admin_actions_log")
+}
+
+model DeliveryOTP {
+  id          String    @id @default(cuid())
+  orderId     String    @unique @map("order_id")
+  otpHash     String    @map("otp_hash")
+  generatedAt DateTime  @map("generated_at")
+  expiresAt   DateTime  @map("expires_at")
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3) @map("max_attempts")
+  status      String    @default("PENDING")
+
+  @@map("delivery_otps")
+}
+
+model ProofOfDelivery {
+  id                 String    @id @default(cuid())
+  orderId           String    @unique @map("order_id")
+  recipientName     String    @map("recipient_name")
+  recipientPhone    String?   @map("recipient_phone")
+  otpVerified       Boolean   @default(false) @map("otp_verified")
+  signatureUrl      String?   @map("signature_url")
+  photoUrl          String?   @map("photo_url")
+  lat               Float?    @map("lat")
+  lng               Float?    @map("lng")
+  deliveredAt       DateTime? @map("delivered_at")
+  deliveryPersonName String?  @map("delivery_person_name")
+  deliveryPersonPhone String? @map("delivery_person_phone")
+  notes             String?
+
+  @@map("proof_of_deliveries")
+}
+
+model DeliveryAssignment {
+  id                     String    @id @default(cuid())
+  orderId               String    @map("order_id")
+  distributorId         String    @map("distributor_id")
+  deliveryPartner       String?   @map("delivery_partner")
+  deliveryPersonName    String?   @map("delivery_person_name")
+  deliveryPersonPhone   String?   @map("delivery_person_phone")
+  estimatedDeliveryDate DateTime? @map("estimated_delivery_date")
+  assignedAt           DateTime  @default(now()) @map("assigned_at")
+  assignedBy           String    @map("assigned_by")
+  status                String    @default("ASSIGNED")
+
+  @@index([orderId])
+  @@map("delivery_assignments")
+}
+
+model DeliveryUpdate {
+  id            String    @id @default(cuid())
+  orderId       String    @map("order_id")
+  status        String    @map("status")
+  location      Json?
+  notes         String?
+  failureReason String?   @map("failure_reason")
+  timestamp     DateTime  @default(now()) @map("timestamp")
+
+  @@index([orderId])
+  @@index([timestamp])
+  @@map("delivery_updates")
+}
+
+model StatusAuditLog {
+  id          String    @id @default(cuid())
+  entityType String    @map("entity_type")
+  entityId  String    @map("entity_id")
+  eventType String    @map("event_type")
+  fromStatus String?   @map("from_status")
+  toStatus   String    @map("to_status")
+  actorId   String    @map("actor_id")
+  actorType String    @default("USER") @map("actor_type")
+  reason    String?
+  metadata  Json?
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([eventType])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("status_audit_logs")
+}
+
+model RollbackLog {
+  id                String    @id @default(cuid())
+  originalActionId String    @map("original_action_id")
+  rollbackActionType String  @map("rollback_action_type")
+  entityType       String    @map("entity_type")
+  entityId         String    @map("entity_id")
+  initiatedBy      String    @map("initiated_by")
+  reason           String
+  previousState    Json      @map("previous_state")
+  newState         Json      @map("new_state")
+  status           String    @default("PENDING")
+  errorMessage     String?   @map("error_message")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  completedAt      DateTime? @map("completed_at")
+
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("rollback_logs")
+}
+
+model NotificationQueue {
+  id           String    @id @default(cuid())
+  eventType   String    @map("event_type")
+  entityType  String    @map("entity_type")
+  entityId    String    @map("entity_id")
+  payload     Json
+  status      String    @default("PENDING")
+  channel     String?
+  recipients  Json?
+  scheduledFor DateTime @map("scheduled_for")
+  sentAt      DateTime? @map("sent_at")
+  errorMessage String?   @map("error_message")
+  retryCount  Int       @default(0) @map("retry_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([status, scheduledFor])
+  @@index([entityType, entityId])
+  @@map("notification_queue")
 }

@@ -107,14 +107,14 @@ export default function LiveInvoicePreview({
   return (
     <div className="h-full flex flex-col">
       {/* Action Bar */}
-      <div className="bg-white border-b border-gray-200 p-4 flex-shrink-0">
+      <div className="bg-card border-b border-border p-4 flex-shrink-0">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Badge className="bg-green-100 text-green-800 border-green-200">
+            <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800">
               <CheckCircle className="w-4 h-4 mr-1" />
               Live Preview
             </Badge>
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-muted-foreground">
               {invoiceData.items.length} items • {formatCurrency(totals.grandTotal)}
             </span>
           </div>
@@ -124,7 +124,7 @@ export default function LiveInvoicePreview({
               size="sm"
               onClick={onSave}
               disabled={isSaving || invoiceData.items.length === 0}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-primary-foreground"
             >
               <FloppyDisk className="w-4 h-4 mr-1" />
               {isSaving ? 'Saving...' : 'Save'}
@@ -135,7 +135,7 @@ export default function LiveInvoicePreview({
               variant="outline"
               onClick={onPrint}
               disabled={invoiceData.items.length === 0}
-              className="border-gray-400 text-gray-700 hover:bg-gray-100 hover:text-gray-800"
+              className="border-input text-foreground hover:bg-muted"
             >
               <Printer className="w-4 h-4 mr-1" />
               Print
@@ -146,7 +146,7 @@ export default function LiveInvoicePreview({
               variant="outline"
               onClick={onDownload}
               disabled={invoiceData.items.length === 0}
-              className="border-gray-400 text-gray-700 hover:bg-gray-100 hover:text-gray-800"
+              className="border-input text-foreground hover:bg-muted"
             >
               <Download className="w-4 h-4 mr-1" />
               PDF
@@ -157,7 +157,7 @@ export default function LiveInvoicePreview({
                 variant="outline"
                 onClick={onEmail}
                 disabled={invoiceData.items.length === 0}
-                className="border-gray-400 text-gray-700 hover:bg-gray-100 hover:text-gray-800"
+                className="border-input text-foreground hover:bg-muted"
               >
                 <Envelope className="w-4 h-4 mr-1" />
                 Email

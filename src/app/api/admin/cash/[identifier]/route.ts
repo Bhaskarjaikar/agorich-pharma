@@ -162,8 +162,12 @@ export async function GET(
         .join(',')
       profileQuery = profileQuery.or(orFilters)
     } else if (searchBy === 'name') {
+      const sanitizedIdentifier = identifier
+        .trim()
+        .slice(0, 100)
+        .replace(/[%_\\]/g, (match) => `\\${match}`)
       profileQuery = profileQuery.or(
-        `business_name.ilike.%${identifier}%,user_name.ilike.%${identifier}%`
+        `business_name.ilike.%${sanitizedIdentifier}%,user_name.ilike.%${sanitizedIdentifier}%`
       )
     } else {
       profileQuery = profileQuery.eq('id', identifier)

@@ -25,13 +25,7 @@ export async function POST(
     // Use service role client to bypass RLS for admin operations
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    console.log('Service role key check:', {
-      hasServiceKey: !!supabaseServiceKey,
-      serviceKeyLength: supabaseServiceKey?.length || 0,
-      supabaseUrl: supabaseUrl
-    })
-    
+
     let supabase
     if (supabaseServiceKey && supabaseUrl) {
       // Use service role client (bypasses RLS) for admin operations
@@ -41,12 +35,9 @@ export async function POST(
           persistSession: false 
         }
       })
-      console.log('✅ Using service role client for admin invoice update (RLS bypassed)')
+      console.log('Using service role client for admin invoice update')
     } else {
-      // Fallback to regular client
       supabase = await createServerClient()
-      console.warn('⚠️ Using regular client - Service role key not found. RLS may block admin updates!')
-      console.warn('⚠️ Please add SUPABASE_SERVICE_ROLE_KEY to .env.local')
     }
 
     const { id } = params

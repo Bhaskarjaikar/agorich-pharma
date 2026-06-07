@@ -183,9 +183,9 @@ export default function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {/* Breadcrumb */}
-      <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-background border-b border-slate-200 dark:border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-muted-foreground">
             <Link href="/" className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1">
               <Home className="w-4 h-4" />
               Home
@@ -212,7 +212,7 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             {/* Main Image with Mouse-Tracking Zoom */}
             <div 
-              className="relative aspect-square bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden cursor-zoom-in"
+              className="relative aspect-square bg-white dark:bg-background rounded-2xl border border-slate-200 dark:border-border overflow-hidden cursor-zoom-in"
               onMouseMove={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const x = ((e.clientX - rect.left) / rect.width) * 100
@@ -242,11 +242,11 @@ export default function ProductDetailPage() {
               
               {/* Wishlist & Share */}
               <div className="absolute top-4 right-4 flex gap-2">
-                <button className="p-2 bg-white dark:bg-slate-700 rounded-full shadow-lg hover:shadow-xl transition-shadow">
-                  <Heart className="w-5 h-5 text-slate-400 hover:text-red-500" />
+                <button className="p-2 bg-white dark:bg-card rounded-full shadow-lg hover:shadow-xl transition-shadow">
+                  <Heart className="w-5 h-5 text-muted-foreground hover:text-red-500" />
                 </button>
-                <button className="p-2 bg-white dark:bg-slate-700 rounded-full shadow-lg hover:shadow-xl transition-shadow">
-                  <Share2 className="w-5 h-5 text-slate-400 hover:text-blue-500" />
+                <button className="p-2 bg-white dark:bg-card rounded-full shadow-lg hover:shadow-xl transition-shadow">
+                  <Share2 className="w-5 h-5 text-muted-foreground hover:text-blue-500" />
                 </button>
               </div>
 
@@ -268,7 +268,7 @@ export default function ProductDetailPage() {
                     className={`relative w-20 h-20 rounded-lg border-2 overflow-hidden flex-shrink-0 ${
                       selectedImage === idx 
                         ? 'border-blue-500' 
-                        : 'border-slate-200 dark:border-slate-700'
+                        : 'border-slate-200 dark:border-border'
                     }`}
                   >
                     <Image
@@ -303,14 +303,14 @@ export default function ProductDetailPage() {
               <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2">
                 {product.name}
               </h1>
-              <p className="text-slate-600 dark:text-slate-400">
+              <p className="text-slate-600 dark:text-muted-foreground">
                 {product.manufacturer || 'Agorich Pharmaceuticals Pvt Ltd'}
               </p>
             </div>
 
             {/* Salt Composition */}
-            <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-xl">
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Salt Composition</p>
+            <div className="p-4 bg-slate-100 dark:bg-background rounded-xl">
+              <p className="text-sm text-slate-500 dark:text-muted-foreground mb-1">Salt Composition</p>
               <p className="font-medium text-slate-900 dark:text-white">
                 {product.salt_composition || 'Not available'}
               </p>
@@ -324,7 +324,7 @@ export default function ProductDetailPage() {
                 </span>
                 {product.mrp > product.agorich_price && (
                   <>
-                    <span className="text-lg text-slate-400 line-through">
+                    <span className="text-lg text-muted-foreground line-through">
                       ₹{product.mrp}
                     </span>
                     <span className="text-green-600 font-semibold">
@@ -333,10 +333,10 @@ export default function ProductDetailPage() {
                   </>
                 )}
               </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-sm text-slate-500 dark:text-muted-foreground">
                 Inclusive of all taxes
               </p>
-              <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
+              <p className="text-sm text-muted-foreground dark:text-slate-500 mt-1">
                 Pack Size: {product.pack_size || '10 Tablets'}
               </p>
             </div>
@@ -344,10 +344,10 @@ export default function ProductDetailPage() {
             {/* Quantity Selector */}
             <div className="flex items-center gap-4">
               <span className="font-medium text-slate-900 dark:text-white">Quantity:</span>
-              <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg">
+              <div className="flex items-center border border-slate-200 dark:border-border rounded-lg">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-background"
                   disabled={quantity <= 1}
                 >
                   <Minus className="w-4 h-4" />
@@ -355,7 +355,7 @@ export default function ProductDetailPage() {
                 <span className="w-12 text-center font-medium">{quantity}</span>
                 <button
                   onClick={() => setQuantity(quantity + 1)}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-background"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -386,18 +386,18 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-200 dark:border-slate-700">
+            <div className="grid grid-cols-3 gap-4 py-4 border-y border-slate-200 dark:border-border">
               <div className="text-center">
                 <Shield className="w-6 h-6 mx-auto mb-1 text-green-500" />
-                <p className="text-xs text-slate-600 dark:text-slate-400">100% Genuine</p>
+                <p className="text-xs text-slate-600 dark:text-muted-foreground">100% Genuine</p>
               </div>
               <div className="text-center">
                 <RotateCcw className="w-6 h-6 mx-auto mb-1 text-blue-500" />
-                <p className="text-xs text-slate-600 dark:text-slate-400">Easy Returns</p>
+                <p className="text-xs text-slate-600 dark:text-muted-foreground">Easy Returns</p>
               </div>
               <div className="text-center">
                 <Truck className="w-6 h-6 mx-auto mb-1 text-purple-500" />
-                <p className="text-xs text-slate-600 dark:text-slate-400">Free Delivery</p>
+                <p className="text-xs text-slate-600 dark:text-muted-foreground">Free Delivery</p>
               </div>
             </div>
 
@@ -414,14 +414,14 @@ export default function ProductDetailPage() {
               <TabsContent value="introduction" className="mt-6">
                 <div className="prose dark:prose-invert max-w-none">
                   <h3 className="text-lg font-semibold mb-3">Product Information</h3>
-                  <p className="text-slate-600 dark:text-slate-400">
+                  <p className="text-slate-600 dark:text-muted-foreground">
                     {product.description || 'No description available'}
                   </p>
                   
                   {product.uses && (
                     <>
                       <h4 className="font-semibold mt-4 mb-2">Uses & Benefits</h4>
-                      <p className="text-slate-600 dark:text-slate-400">{product.uses}</p>
+                      <p className="text-slate-600 dark:text-muted-foreground">{product.uses}</p>
                     </>
                   )}
                 </div>
@@ -430,7 +430,7 @@ export default function ProductDetailPage() {
               <TabsContent value="uses" className="mt-6">
                 <div className="prose dark:prose-invert max-w-none">
                   <h3 className="text-lg font-semibold mb-3">Benefits</h3>
-                  <p className="text-slate-600 dark:text-slate-400">
+                  <p className="text-slate-600 dark:text-muted-foreground">
                     {product.uses || 'Benefits information not available'}
                   </p>
                 </div>

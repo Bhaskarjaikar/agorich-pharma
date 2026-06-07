@@ -33,10 +33,16 @@ export async function GET(request: NextRequest) {
 
     const userRole = profile?.role
 
+    // Calculate date 7 days ago for TTL
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    const sevenDaysAgoISO = sevenDaysAgo.toISOString()
+
     const { data: notifications } = await supabase
       .from('notifications')
       .select('*')
-      .or(`created_for_role.is.null,created_for_role.eq.${userRole}`)
+      .or(`created_for_role.eq.${userRole},created_for_user_id.eq.${user.id}`)
+      .gte('created_at', sevenDaysAgoISO)
       .order('created_at', { ascending: false })
       .limit(50)
 
@@ -84,13 +90,20 @@ export async function POST(request: NextRequest) {
     }
 
     if (mark_as_read) {
-      await supabase
-        .from('notification_reads')
-        .upsert({
-          notification_id,
-          user_id: user.id,
-          read_at: new Date().toISOString(),
+      const { error } = await supabase
+        .from('notifications')
+        .update({ 
+          is_read: true, 
+          read_at: new Date().toISOString() 
         })
+        .eq('id', notification_id)
+
+      if (error) {
+        console.error('Failed to mark notification as read:', error)
+        return NextResponse.json({ 
+          error: 'Failed to update notification status' 
+        }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ success: true })

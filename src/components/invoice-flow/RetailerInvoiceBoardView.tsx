@@ -24,15 +24,17 @@ const statusColumns = ['DRAFT','SENT','PROCESSING','PACKING','DELIVERED','PARTIA
 
 const getStatusDotColor = (status: string) => {
   switch (status) {
-    case 'DRAFT': return 'bg-slate-400'
-    case 'SENT': return 'bg-blue-400'
-    case 'PROCESSING': return 'bg-amber-400'
-    case 'PACKING': return 'bg-purple-400'
-    case 'DELIVERED': return 'bg-emerald-400'
-    case 'PARTIAL_PAID': return 'bg-cyan-500'
-    case 'PAID': return 'bg-emerald-500'
-    case 'OVERDUE': return 'bg-rose-400'
-    default: return 'bg-slate-400'
+    case 'DRAFT': return 'bg-muted text-muted-foreground'
+    case 'SENT': return 'bg-purple-500/10 text-purple-500 dark:bg-purple-500/20'
+    case 'PROCESSING': return 'bg-amber-500/10 text-amber-500 dark:bg-amber-500/20'
+    case 'PACKING': return 'bg-indigo-500/10 text-indigo-500 dark:bg-indigo-500/20'
+    case 'DELIVERED': return 'bg-green-500/10 text-green-500 dark:bg-green-500/20'
+    case 'PARTIAL_PAID': return 'bg-cyan-500/10 text-cyan-500 dark:bg-cyan-500/20'
+    case 'PAID': return 'bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20'
+    case 'OVERDUE': return 'bg-destructive/10 text-destructive'
+    case 'CANCELLED': return 'bg-destructive/10 text-destructive'
+    case 'CONFIRMED': return 'bg-blue-500/10 text-blue-500 dark:bg-blue-500/20'
+    default: return 'bg-muted text-muted-foreground'
   }
 }
 
@@ -78,7 +80,7 @@ export default function RetailerInvoiceBoardView({
   onPayment,
   getStatusColor,
   getRelativeTime: getRelativeTimeProp,
-  darkMode = true
+  darkMode
 }: Props) {
   
   const handleDownloadPDF = (inv: Invoice) => {

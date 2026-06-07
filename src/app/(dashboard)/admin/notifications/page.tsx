@@ -23,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { ExpandableText } from '@/components/ui/expandable-text'
 import { toast } from 'sonner'
 
 interface NotificationItem {
@@ -51,6 +52,7 @@ const CLICK_ACTION_OPTIONS = [
   { value: '/schemes', label: '/schemes' },
   { value: '/invoices', label: '/invoices' },
   { value: '/offers', label: '/offers' },
+  { value: 'CUSTOM', label: 'Custom URL' },
 ]
 
 export default function NotificationCenter() {
@@ -65,6 +67,7 @@ export default function NotificationCenter() {
   const [body, setBody] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [clickAction, setClickAction] = useState('/dashboard')
+  const [customUrl, setCustomUrl] = useState('')
   const [targetRoles, setTargetRoles] = useState<string[]>([])
 
   useEffect(() => {
@@ -100,10 +103,12 @@ export default function NotificationCenter() {
 
     setSending(true)
     try {
+      const finalClickAction = clickAction === 'CUSTOM' ? customUrl.trim() : clickAction
+      
       const payload: any = {
         title: title.trim(),
         body: body.trim(),
-        click_action: clickAction,
+        click_action: finalClickAction,
       }
 
       if (imageUrl.trim()) {
@@ -143,6 +148,7 @@ export default function NotificationCenter() {
     setBody('')
     setImageUrl('')
     setClickAction('/dashboard')
+    setCustomUrl('')
     setTargetRoles([])
   }
 
@@ -150,7 +156,19 @@ export default function NotificationCenter() {
     setTitle(notification.title)
     setBody(notification.message)
     setImageUrl(notification.metadata?.image || '')
-    setClickAction(notification.link || '/dashboard')
+    
+    // Check if link is a custom URL (not in predefined options)
+    const isCustomUrl = notification.link && 
+      !CLICK_ACTION_OPTIONS.some(opt => opt.value === notification.link)
+    
+    if (isCustomUrl && notification.link) {
+      setClickAction('CUSTOM')
+      setCustomUrl(notification.link)
+    } else {
+      setClickAction(notification.link || '/dashboard')
+      setCustomUrl('')
+    }
+    
     setTargetRoles(notification.metadata?.target_roles || [])
     toast.success('Loaded notification for editing')
   }
@@ -178,14 +196,14 @@ export default function NotificationCenter() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-3 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+            <div className={`p-3 rounded-xl ${isDark ? 'bg-background' : 'bg-white'}`}>
               <Bell className={`w-7 h-7 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
             </div>
             <div>
               <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 Notification Center
               </h1>
-              <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+              <p className={`text-sm ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                 Broadcast push notifications to your users
               </p>
             </div>
@@ -193,7 +211,7 @@ export default function NotificationCenter() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white'}`}>
+          <Card className={`${isDark ? 'bg-background border-border' : 'bg-white'}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Send className="w-5 h-5" />
@@ -209,7 +227,7 @@ export default function NotificationCenter() {
                   placeholder="Enter notification title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className={isDark ? 'bg-slate-700 border-slate-600 text-white' : ''}
+                  className={isDark ? 'bg-card border-slate-600 text-white' : ''}
                 />
               </div>
 
@@ -218,7 +236,7 @@ export default function NotificationCenter() {
                   <label className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                     Message
                   </label>
-                  <span className={`text-xs ${body.length > 180 ? 'text-red-500' : isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <span className={`text-xs ${body.length > 180 ? 'text-red-500' : isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
                     {body.length}/200
                   </span>
                 </div>
@@ -228,7 +246,7 @@ export default function NotificationCenter() {
                   onChange={(e) => setBody(e.target.value)}
                   maxLength={200}
                   rows={3}
-                  className={isDark ? 'bg-slate-700 border-slate-600 text-white' : ''}
+                  className={isDark ? 'bg-card border-slate-600 text-white' : ''}
                 />
               </div>
 
@@ -241,7 +259,7 @@ export default function NotificationCenter() {
                   placeholder="https://example.com/image.jpg"
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
-                  className={isDark ? 'bg-slate-700 border-slate-600 text-white' : ''}
+                  className={isDark ? 'bg-card border-slate-600 text-white' : ''}
                 />
               </div>
 
@@ -255,7 +273,7 @@ export default function NotificationCenter() {
                   onChange={(e) => setClickAction(e.target.value)}
                   className={`w-full h-10 px-3 rounded-md border ${
                     isDark 
-                      ? 'bg-slate-700 border-slate-600 text-white' 
+                      ? 'bg-card border-slate-600 text-white' 
                       : 'bg-white border-slate-200 text-slate-900'
                   }`}
                 >
@@ -263,6 +281,19 @@ export default function NotificationCenter() {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
+                {clickAction === 'CUSTOM' && (
+                  <div className="mt-2">
+                    <Input
+                      placeholder="https://example.com/page or /custom-route"
+                      value={customUrl}
+                      onChange={(e) => setCustomUrl(e.target.value)}
+                      className={isDark ? 'bg-card border-slate-600 text-white' : ''}
+                    />
+                    <p className={`text-xs mt-1 ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
+                      Enter full URL or app route
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -280,7 +311,7 @@ export default function NotificationCenter() {
                         targetRoles.includes(role.value)
                           ? 'bg-blue-600 text-white'
                           : isDark
-                          ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                          ? 'bg-card text-slate-300 hover:bg-slate-600'
                           : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
@@ -289,7 +320,7 @@ export default function NotificationCenter() {
                   ))}
                 </div>
                 {targetRoles.length === 0 && (
-                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
                     Sending to all users
                   </p>
                 )}
@@ -324,7 +355,7 @@ export default function NotificationCenter() {
             </CardContent>
           </Card>
 
-          <Card className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white'}`}>
+          <Card className={`${isDark ? 'bg-background border-border' : 'bg-white'}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5" />
@@ -333,10 +364,10 @@ export default function NotificationCenter() {
             </CardHeader>
             <CardContent>
               <div className={`mx-auto w-full max-w-sm rounded-3xl border-4 ${
-                isDark ? 'border-slate-700 bg-slate-900' : 'border-slate-200 bg-slate-50'
+                isDark ? 'border-border bg-slate-900' : 'border-slate-200 bg-slate-50'
               } p-4 shadow-2xl`}>
                 <div className={`rounded-2xl overflow-hidden ${
-                  isDark ? 'bg-slate-800' : 'bg-white'
+                  isDark ? 'bg-background' : 'bg-white'
                 } shadow-lg`}>
                   {imageUrl && (
                     <div className="relative h-40 bg-slate-200">
@@ -353,12 +384,12 @@ export default function NotificationCenter() {
                   <div className="p-4">
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isDark ? 'bg-slate-700' : 'bg-slate-100'
+                        isDark ? 'bg-card' : 'bg-slate-100'
                       }`}>
                         <Bell className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <p className={`text-xs font-medium ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                           Agorich Pharma
                         </p>
                         <h3 className={`font-semibold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -367,7 +398,7 @@ export default function NotificationCenter() {
                         <p className={`text-sm mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                           {body || 'Notification message will appear here...'}
                         </p>
-                        <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <p className={`text-xs mt-2 ${isDark ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           just now
                         </p>
                       </div>
@@ -376,11 +407,11 @@ export default function NotificationCenter() {
                 </div>
               </div>
 
-              <div className={`mt-6 p-4 rounded-xl ${isDark ? 'bg-slate-700/50' : 'bg-slate-100'}`}>
+              <div className={`mt-6 p-4 rounded-xl ${isDark ? 'bg-card/50' : 'bg-slate-100'}`}>
                 <h4 className={`text-sm font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                   Quick Tips
                 </h4>
-                <ul className={`text-xs space-y-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                <ul className={`text-xs space-y-1 ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                   <li>• Keep messages under 150 characters for best display</li>
                   <li>• Images should be 1024x512px for banner format</li>
                   <li>• Click action deep-links users to specific pages</li>
@@ -390,7 +421,7 @@ export default function NotificationCenter() {
           </Card>
         </div>
 
-        <Card className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white'}`}>
+        <Card className={`${isDark ? 'bg-background border-border' : 'bg-white'}`}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <History className="w-5 h-5" />
@@ -405,7 +436,7 @@ export default function NotificationCenter() {
             ) : notifications.length === 0 ? (
               <div className="text-center py-12">
                 <Bell className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
-                <p className={isDark ? 'text-slate-400' : 'text-slate-500'}>
+                <p className={isDark ? 'text-muted-foreground' : 'text-slate-500'}>
                   No broadcasts sent yet
                 </p>
               </div>
@@ -413,27 +444,27 @@ export default function NotificationCenter() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className={isDark ? 'border-slate-700' : 'border-slate-200'}>
-                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    <tr className={isDark ? 'border-border' : 'border-slate-200'}>
+                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                         Date & Time
                       </th>
-                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                         Title
                       </th>
-                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                         Audience
                       </th>
-                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <th className={`text-left py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                         Status
                       </th>
-                      <th className={`text-right py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <th className={`text-right py-3 px-4 text-xs font-semibold uppercase ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {notifications.map((notification) => (
-                      <tr key={notification.id} className={isDark ? 'border-slate-700' : 'border-slate-100'}>
+                      <tr key={notification.id} className={isDark ? 'border-border' : 'border-slate-100'}>
                         <td className={`py-3 px-4 text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -442,8 +473,12 @@ export default function NotificationCenter() {
                         </td>
                         <td className={`py-3 px-4 text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
                           <div className="font-medium">{notification.title}</div>
-                          <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {notification.message}
+                          <div className={`text-xs ${isDark ? 'text-muted-foreground' : 'text-slate-500'}`}>
+                            <ExpandableText 
+                              text={notification.message} 
+                              maxLength={80}
+                              showToggleButton={false}
+                            />
                           </div>
                         </td>
                         <td className="py-3 px-4">

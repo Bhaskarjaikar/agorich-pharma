@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test PushManager VAPID Key</title>
+</head>
+<body>
+    <h1>Testing VAPID Key with PushManager</h1>
+    <div id="output"></div>
+    
+    <script>
+        const output = document.getElementById('output');
+        const vapidKey = 'BAwDfB9gDwFjI3n7TR49F86fklJMnmTz6fKrn1778q0Qu9bOaYpGjAZbOwQjlgA8IhG5ltCPhKrLuvRmU4_0ZA0';
+        
+        async function testVapidKey() {
+            output.innerHTML = '<p>Testing VAPID key: ' + vapidKey + '</p>';
+            output.innerHTML += '<p>Length: ' + vapidKey.length + ' characters</p>';
+            
+            // Check if PushManager is supported
+            if (!('PushManager' in window)) {
+                output.innerHTML += '<p style="color: red;">PushManager not supported</p>';
+                return;
+            }
+            
+            // Check if service workers are supported
+            if (!('serviceWorker' in navigator)) {
+                output.innerHTML += '<p style="color: red;">Service workers not supported</p>';
+                return;
+            }
+            
+            // Try to register a service worker
+            try {
+                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+                    scope: '/',
+                    type: 'classic'
+                });
+                
+                output.innerHTML += '<p style="color: green;">Service worker registered successfully</p>';
+                
+                // Wait for service worker to be ready
+                if (registration.installing) {
+                    await new Promise(resolve => {
+                        registration.installing.addEventListener('statechange', () => {
+                            if (registration.installing.state === 'activated') {
+                                resolve();
+                            }
+                        });
+                    });
+                }
+                
+                // Try to convert VAPID key to Uint8Array
+                try {
+                    // Convert Base64 URL to standard Base64
+                    let standardBase64 = vapidKey.replace(/-/g, '+').replace(/_/g, '/');
+                    // Add padding if needed
+                    while (standardBase64.length % 4) {
+                        standardBase64 += '=';
+                    }
+                    
+                    // Decode to binary string
+                    const binaryString = atob(standardBase64);
+                    const bytes = new Uint8Array(binaryString.length);
+                    for (let i = 0; i < binaryString.length; i++) {
+                        bytes[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    output.innerHTML += '<p style="color: green;">VAPID key successfully converted to Uint8Array</p>';
+                    output.innerHTML += '<p>Decoded length: ' + bytes.length + ' bytes</p>';
+                    
+                    // Try to subscribe with PushManager
+                    try {
+                        const subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: bytes
+                        });
+                        
+                        output.innerHTML += '<p style="color: green;">✅ Successfully subscribed to PushManager!</p>';
+                        output.innerHTML += '<p>Subscription endpoint: ' + subscription.endpoint.substring(0, 50) + '...</p>';
+                        
+                        // Unsubscribe to clean up
+                        await subscription.unsubscribe();
+                        output.innerHTML += '<p>Unsubscribed for cleanup</p>';
+                        
+                    } catch (pushError) {
+                        output.innerHTML += '<p style="color: red;">❌ PushManager.subscribe() failed: ' + pushError.message + '</p>';
+                        output.innerHTML += '<p>Error name: ' + pushError.name + '</p>';
+                    }
+                    
+                } catch (conversionError) {
+                    output.innerHTML += '<p style="color: red;">❌ VAPID key conversion failed: ' + conversionError.message + '</p>';
+                }
+                
+            } catch (swError) {
+                output.innerHTML += '<p style="color: red;">❌ Service worker registration failed: ' + swError.message + '</p>';
+            }
+        }
+        
+        testVapidKey();
+    </script>
+</body>
+</html>

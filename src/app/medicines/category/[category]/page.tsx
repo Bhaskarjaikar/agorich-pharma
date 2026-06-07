@@ -184,7 +184,7 @@ export default function CategoryPage() {
         <div className="mb-6">
           <Link 
             href="/medicines" 
-            className="inline-flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            className="inline-flex items-center gap-2 text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-white"
           >
             <ArrowLeft className="w-5 h-5" />
             <span>View All Medicines</span>
@@ -194,20 +194,20 @@ export default function CategoryPage() {
         {/* Search Bar */}
         <div className="mb-8">
           <div className="relative max-w-2xl mx-auto">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               type="text"
               placeholder={`Search ${categoryInfo.name} medicines...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 pr-4 py-6 text-lg rounded-full border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500"
+              className="pl-12 pr-4 py-6 text-lg rounded-full border-slate-200 dark:border-border focus:ring-2 focus:ring-blue-500"
             />
           </div>
         </div>
 
         {/* Results Count */}
         <div className="mb-6 flex items-center justify-between">
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-slate-600 dark:text-muted-foreground">
             Showing <span className="font-semibold text-slate-900 dark:text-white">{products.length}</span> {categoryInfo.name} medicines
           </p>
         </div>
@@ -216,11 +216,11 @@ export default function CategoryPage() {
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-4 animate-pulse">
-                <div className="h-48 bg-slate-200 dark:bg-slate-700 rounded-lg mb-4" />
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-2" />
-                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2 mb-4" />
-                <div className="h-8 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div key={i} className="bg-white dark:bg-background rounded-xl p-4 animate-pulse">
+                <div className="h-48 bg-slate-200 dark:bg-card rounded-lg mb-4" />
+                <div className="h-4 bg-slate-200 dark:bg-card rounded w-3/4 mb-2" />
+                <div className="h-4 bg-slate-200 dark:bg-card rounded w-1/2 mb-4" />
+                <div className="h-8 bg-slate-200 dark:bg-card rounded" />
               </div>
             ))}
           </div>
@@ -231,8 +231,8 @@ export default function CategoryPage() {
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-500 dark:text-slate-400 text-lg">No {categoryInfo.name} medicines found</p>
-            <p className="text-slate-400 dark:text-slate-500 mt-2">Try adjusting your search</p>
+            <p className="text-slate-500 dark:text-muted-foreground text-lg">No {categoryInfo.name} medicines found</p>
+            <p className="text-muted-foreground dark:text-slate-500 mt-2">Try adjusting your search</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -245,10 +245,10 @@ export default function CategoryPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   whileHover={{ y: -5 }}
-                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden hover:shadow-xl transition-all"
+                  className="bg-white dark:bg-background rounded-xl border border-slate-200 dark:border-border overflow-hidden hover:shadow-xl transition-all"
                 >
                   {/* Product Image - Box image first, full cover */}
-                  <Link href={`/medicines/product/${product.id}`} className="block relative h-48 bg-white dark:bg-slate-800 overflow-hidden">
+                  <Link href={`/medicines/product/${product.id}`} className="block relative h-48 bg-white dark:bg-background overflow-hidden">
                     {(() => {
                       const boxImage = product.images?.find((img: string) => img.toLowerCase().includes('_box'))
                       const imageUrl = boxImage || product.thumbnail
@@ -287,10 +287,10 @@ export default function CategoryPage() {
                         {product.name}
                       </h3>
                     </Link>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                    <p className="text-sm text-slate-500 dark:text-muted-foreground mb-2">
                       {product.manufacturer || 'Agorich Pharmaceuticals'}
                     </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
+                    <p className="text-xs text-muted-foreground dark:text-slate-500 mb-3">
                       {product.pack_size || '10 Tablets'}
                     </p>
 
@@ -300,7 +300,7 @@ export default function CategoryPage() {
                         ₹{product.agorich_price || 0}
                       </span>
                       {product.mrp > product.agorich_price && (
-                        <span className="text-sm text-slate-400 line-through">
+                        <span className="text-sm text-muted-foreground line-through">
                           ₹{product.mrp}
                         </span>
                       )}

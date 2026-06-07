@@ -241,13 +241,13 @@ export default function ExpiryWatchlist() {
         {!loading && (
           <div className="space-y-4">
             {filteredProducts.length === 0 ? (
-              <Card className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+              <Card className={`${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
                 <CardContent className="p-8 text-center">
-                  <Package className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} weight="fill" />
+                  <Package className={`w-16 h-16 mx-auto mb-4 ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`} weight="fill" />
                   <h3 className={`text-xl font-semibold mb-2 ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     No Expiring Products
                   </h3>
-                  <p className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+                  <p className={darkMode ? 'text-muted-foreground' : 'text-slate-500'}>
                     Great! No products are expiring in the selected timeframe
                   </p>
                 </CardContent>
@@ -259,7 +259,7 @@ export default function ExpiryWatchlist() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                 >
-                  <Card className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} ${
+                  <Card className={`${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'} ${
                     product.days_until_expiry < 30 ? 'border-red-500/50' : ''
                   }`}>
                     <CardContent className="p-6">
@@ -303,7 +303,7 @@ export default function ExpiryWatchlist() {
                             }`}>
                               {product.days_until_expiry}
                             </div>
-                            <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+                            <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-600'}`}>
                               Expires: {formatDate(product.expiry_date)}
                             </div>
                           </div>

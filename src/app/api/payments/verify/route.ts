@@ -6,17 +6,17 @@ import {
   writePaymentToCanonicalLedger,
   normalizePaymentStatus,
   normalizePaymentType
-} from '@/lib/payment-ledger'
+} from '@/lib/payment-ledger/ledger'
+import { verifyAdmin } from '@/lib/api-security'
 
 const isMockMode = process.env.RAZORPAY_MOCK_MODE === 'true'
 
-// Lazy initialization of Supabase client
 let supabase: ReturnType<typeof createClient> | null = null
 
 function getSupabaseClient() {
   if (!supabase) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Supabase environment variables are not set')
     }
@@ -25,10 +25,6 @@ function getSupabaseClient() {
   return supabase
 }
 
-/**
- * Verify Razorpay signature using HMAC-SHA256
- * Signature = HMAC-SHA256(order_id + "|" + payment_id, secret)
- */
 function verifyRazorpaySignature(
   orderId: string,
   paymentId: string,
@@ -41,7 +37,6 @@ function verifyRazorpaySignature(
     .update(body)
     .digest('hex')
 
-  // Use timing-safe comparison to prevent timing attacks
   try {
     return crypto.timingSafeEqual(
       Buffer.from(signature, 'hex'),
@@ -52,20 +47,139 @@ function verifyRazorpaySignature(
   }
 }
 
+function generateErrorId(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+async function readBodySafely(
+  request: NextRequest,
+  maxSizeBytes: number = 10000
+): Promise<{ success: true; body: string } | { success: false; error: string; status: number }> {
+  const contentLength = request.headers.get('content-length')
+  let parsedContentLength: number | null = null
+
+  if (contentLength) {
+    parsedContentLength = parseInt(contentLength, 10)
+    if (isNaN(parsedContentLength) || parsedContentLength === 0) {
+      return { success: false, error: 'Invalid Content-Length header', status: 400 }
+    }
+    if (parsedContentLength > maxSizeBytes) {
+      return { success: false, error: `Request body too large (max ${maxSizeBytes} bytes)`, status: 413 }
+    }
+  }
+
+  const reader = request.body?.getReader()
+  if (!reader) {
+    return { success: false, error: 'Request body is not available', status: 400 }
+  }
+
+  const decoder = new TextDecoder()
+  let totalLength = 0
+  const chunks: string[] = []
+  let cancelled = false
+
+  try {
+    while (true) {
+      let readResult: ReadableStreamReadResult<Uint8Array>
+      try {
+        readResult = await reader.read()
+      } catch (readErr) {
+        if (cancelled) {
+          return { success: false, error: 'Request body too large', status: 413 }
+        }
+        return { success: false, error: 'Failed to read request body', status: 400 }
+      }
+
+      const { done, value } = readResult
+
+      if (done) {
+        if (parsedContentLength !== null && totalLength !== parsedContentLength) {
+          return { success: false, error: 'Content-Length mismatch with actual body size', status: 400 }
+        }
+        break
+      }
+
+      if (!value) {
+        return { success: false, error: 'Failed to read request body', status: 400 }
+      }
+
+      totalLength += value.byteLength
+
+      if (totalLength > maxSizeBytes) {
+        cancelled = true
+        try {
+          await reader.cancel()
+        } catch {
+        }
+        return { success: false, error: 'Request body too large', status: 413 }
+      }
+
+      chunks.push(decoder.decode(value, { stream: true }))
+    }
+
+    chunks.push(decoder.decode())
+    const body = chunks.join('')
+
+    if (body.length > maxSizeBytes) {
+      return { success: false, error: 'Request body too large', status: 413 }
+    }
+
+    return { success: true, body }
+  } catch {
+    return { success: false, error: 'Failed to read request body', status: 400 }
+  }
+}
+
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<VerifyPaymentResponse>> {
-  try {
-    const body = await request.json()
-    const {
-      razorpay_payment_id,
-      razorpay_order_id,
-      razorpay_signature,
-      invoice_id,
-      amount
-    } = body
+  const errorId = generateErrorId()
 
-    // Validate required fields
+  try {
+    if (isMockMode) {
+      const authResult = await verifyAdmin(request)
+      if ('headers' in authResult) {
+        return NextResponse.json(
+          {
+            success: false,
+            verified: false,
+            message: 'Unauthorized. Admin access required for mock payment verification.'
+          },
+          { status: 401 }
+        )
+      }
+    }
+
+    const bodyResult = await readBodySafely(request)
+    if (!bodyResult.success) {
+      return NextResponse.json(
+        { success: false, verified: false, message: bodyResult.error },
+        { status: bodyResult.status }
+      )
+    }
+
+    let body: Record<string, unknown>
+    try {
+      body = JSON.parse(bodyResult.body)
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          verified: false,
+          message: 'Invalid JSON body'
+        },
+        { status: 400 }
+      )
+    }
+
+    const razorpay_payment_id = typeof body.razorpay_payment_id === 'string' ? body.razorpay_payment_id : ''
+    const razorpay_order_id = typeof body.razorpay_order_id === 'string' ? body.razorpay_order_id : ''
+    const razorpay_signature = typeof body.razorpay_signature === 'string' ? body.razorpay_signature : ''
+    const invoice_id = typeof body.invoice_id === 'string' ? body.invoice_id : ''
+    const amount = typeof body.amount === 'number' ? body.amount : 0
+
     if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !invoice_id) {
       return NextResponse.json(
         {
@@ -77,14 +191,21 @@ export async function POST(
       )
     }
 
-    // MOCK MODE: Skip signature verification and always accept mock payments
     if (isMockMode) {
-      // Mock mode - signature verification skipped
+      console.log(JSON.stringify({
+        errorId,
+        context: 'mock_payment_verification',
+        invoiceId: invoice_id,
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id
+      }))
     } else {
-      // Check environment variables for real mode
       const secret = process.env.RAZORPAY_KEY_SECRET
       if (!secret) {
-        console.error('RAZORPAY_KEY_SECRET not configured')
+        console.error(JSON.stringify({
+          errorId,
+          context: 'razorpay_secret_not_configured'
+        }))
         return NextResponse.json(
           {
             success: false,
@@ -95,7 +216,6 @@ export async function POST(
         )
       }
 
-      // Verify signature
       const isValid = verifyRazorpaySignature(
         razorpay_order_id,
         razorpay_payment_id,
@@ -104,10 +224,12 @@ export async function POST(
       )
 
       if (!isValid) {
-        console.error('Invalid Razorpay signature:', {
-          order_id: razorpay_order_id,
-          payment_id: razorpay_payment_id
-        })
+        console.error(JSON.stringify({
+          errorId,
+          context: 'invalid_razorpay_signature',
+          orderId: razorpay_order_id,
+          paymentId: razorpay_payment_id
+        }))
         return NextResponse.json(
           {
             success: false,
@@ -117,18 +239,14 @@ export async function POST(
           { status: 400 }
         )
       }
-
-      console.log('✅ Signature verified successfully')
     }
 
-    // Get Supabase client
     const client = getSupabaseClient()
 
-    // Check for duplicate payment (idempotency)
     interface PaymentVerification {
       status: string
     }
-    
+
     const { data: existingPayment } = await client
       .from('payment_verifications')
       .select('*')
@@ -137,7 +255,11 @@ export async function POST(
       .single<PaymentVerification>()
 
     if (existingPayment && existingPayment.status === 'SUCCESS') {
-      console.log('⚠️ Duplicate payment detected, already processed:', razorpay_payment_id)
+      console.log(JSON.stringify({
+        errorId,
+        context: 'duplicate_payment_detected',
+        paymentId: razorpay_payment_id
+      }))
       return NextResponse.json({
         success: true,
         verified: true,
@@ -148,13 +270,12 @@ export async function POST(
       })
     }
 
-    // Get invoice details to verify amount
     interface InvoiceData {
       id: string
       status: string
       grand_total: number
     }
-    
+
     const { data: invoice, error: invoiceError } = await client
       .from('invoices')
       .select('*')
@@ -162,7 +283,11 @@ export async function POST(
       .single<InvoiceData>()
 
     if (invoiceError || !invoice) {
-      console.error('❌ Invoice not found:', invoice_id)
+      console.error(JSON.stringify({
+        errorId,
+        context: 'invoice_not_found',
+        invoiceId: invoice_id
+      }))
       return NextResponse.json(
         {
           success: false,
@@ -173,8 +298,7 @@ export async function POST(
       )
     }
 
-    // Verify invoice can be paid (must be DRAFT, SENT, DELIVERED, or OVERDUE)
-    const payableStatuses = ['DRAFT', 'SENT', 'DELIVERED', 'OVERDUE']
+    const payableStatuses = ['DRAFT', 'SENT', 'DELIVERED', 'OVERDUE', 'PARTIALLY_PAID']
     if (!payableStatuses.includes(invoice.status)) {
       return NextResponse.json(
         {
@@ -186,11 +310,15 @@ export async function POST(
       )
     }
 
-    // Verify amount matches (with small tolerance for floating point)
-    const expectedAmount = Math.round(invoice.grand_total * 100) // Convert to paise
+    const expectedAmount = Math.round(invoice.grand_total * 100)
     const actualAmount = Math.round(amount * 100)
     if (Math.abs(expectedAmount - actualAmount) > 1) {
-      console.error('❌ Amount mismatch:', { expected: expectedAmount, actual: actualAmount })
+      console.error(JSON.stringify({
+        errorId,
+        context: 'amount_mismatch',
+        expected: expectedAmount,
+        actual: actualAmount
+      }))
       return NextResponse.json(
         {
           success: false,
@@ -201,34 +329,33 @@ export async function POST(
       )
     }
 
-    // Determine if this is partial payment or full payment
     const grandTotal = invoice.grand_total
     const isPartialPayment = amount < grandTotal
     const codAmount = isPartialPayment ? grandTotal - amount : 0
 
-    // Record payment verification
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: paymentError } = await (client as any).from('payment_verifications').insert({
-      transaction_id: razorpay_payment_id,
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      invoice_id,
-      amount: amount,
-      status: 'SUCCESS',
-      payment_method: 'RAZORPAY',
-      gateway_response: body,
-      verified_at: new Date().toISOString()
-    })
+    const { error: paymentError } = await (client as any)
+      .from('payment_verifications')
+      .insert({
+        transaction_id: razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        invoice_id,
+        amount: amount,
+        status: 'SUCCESS',
+        payment_method: 'RAZORPAY',
+        gateway_response: body,
+        verified_at: new Date().toISOString()
+      })
 
     if (paymentError) {
-      console.error('Error recording payment verification:', paymentError)
-      // Continue to update invoice even if recording fails
+      console.error(JSON.stringify({
+        errorId,
+        context: 'payment_verification_record_failed',
+        error: paymentError.message
+      }))
     }
 
-    // ============================================
-    // DUAL-WRITE: Write to canonical payment ledger
-    // ============================================
     const canonicalResult = await writePaymentToCanonicalLedger(client, {
       invoice_id: invoice_id,
       order_id: null,
@@ -244,51 +371,45 @@ export async function POST(
     })
 
     if (!canonicalResult.success) {
-      console.warn('⚠️ Failed to write to canonical payment ledger (continuing anyway):', canonicalResult.error)
+      console.warn(JSON.stringify({
+        errorId,
+        context: 'canonical_ledger_write_failed',
+        error: canonicalResult.error
+      }))
     }
 
-    // Set appropriate status based on payment type
     const newStatus = isPartialPayment ? 'PARTIALLY_PAID' : 'PAID'
 
-    console.log(`💰 Payment type: ${isPartialPayment ? 'PARTIAL' : 'FULL'}`, {
-      amount,
-      grandTotal,
-      codAmount,
-      newStatus
-    })
-
-    // Update invoice with payment details - build update object dynamically
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status: newStatus,
-      status_updated_at: new Date().toISOString()
+      status_updated_at: new Date().toISOString(),
+      payment_method: 'RAZORPAY',
+      payment_transaction_id: razorpay_payment_id,
+      payment_amount: amount,
+      paid_at: new Date().toISOString()
     }
-    
-    // Add optional columns only if they might exist
-    try {
-      updateData.payment_method = 'RAZORPAY'
-      updateData.payment_transaction_id = razorpay_payment_id
-      updateData.payment_amount = amount
+
+    if (isPartialPayment) {
       updateData.partial_amount_paid = amount
       updateData.cod_amount_pending = codAmount
-      updateData.paid_at = new Date().toISOString()
-    } catch (e) {
-      console.warn('Optional columns not available, skipping')
     }
 
-    // Update invoice with payment details
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (client as any)
       .from('invoices')
       .update(updateData)
       .eq('id', invoice_id)
 
     if (updateError) {
-      console.error('❌ Error updating invoice:', updateError)
-      // Even if invoice update fails, still return success because payment is verified
+      console.error(JSON.stringify({
+        errorId,
+        context: 'invoice_update_failed',
+        invoiceId: invoice_id,
+        error: updateError.message
+      }))
       return NextResponse.json({
         success: true,
         verified: true,
-        message: 'Payment verified successfully! Invoice update may require manual intervention.',
+        message: 'Payment verified but invoice update requires manual intervention.',
         invoice_id,
         payment_id: razorpay_payment_id,
         amount,
@@ -298,20 +419,22 @@ export async function POST(
       })
     }
 
-    console.log('✅ Payment verified and invoice updated:', {
-      invoice_id,
-      payment_id: razorpay_payment_id,
+    console.log(JSON.stringify({
+      errorId,
+      context: 'payment_verified_success',
+      invoiceId: invoice_id,
+      paymentId: razorpay_payment_id,
       amount,
       isPartialPayment,
       codAmount,
       status: newStatus
-    })
+    }))
 
     return NextResponse.json({
       success: true,
       verified: true,
-      message: isPartialPayment 
-        ? `Partial payment of ₹${amount} received. COD amount: ₹${codAmount}` 
+      message: isPartialPayment
+        ? `Partial payment of ₹${amount} received. COD amount: ₹${codAmount}`
         : 'Payment verified successfully',
       invoice_id,
       payment_id: razorpay_payment_id,
@@ -322,7 +445,11 @@ export async function POST(
     })
 
   } catch (error) {
-    console.error('❌ Payment verification error:', error)
+    console.error(JSON.stringify({
+      errorId,
+      context: 'payment_verification_crash',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }))
     return NextResponse.json(
       {
         success: false,
@@ -333,7 +460,3 @@ export async function POST(
     )
   }
 }
-
-
-
-

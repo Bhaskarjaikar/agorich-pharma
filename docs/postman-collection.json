@@ -1,0 +1,1205 @@
+{
+  "info": {
+    "name": "Agorich Pharma API",
+    "description": "Comprehensive API collection for Agorich Pharma's hyperlocal pharma intelligence operating system.\n\n## Overview\nThis collection contains all API endpoints organized by functionality:\n- **Agent Connect**: AI agent integration endpoints\n- **Command Center**: AI-powered command center\n- **Admin**: Administrative endpoints\n- **Approvals**: Approval workflow management\n- **Webhooks**: Webhook handlers\n- **Metrics**: Real-time metrics\n- **Invoices**: Invoice management\n- **Intelligence**: AI business intelligence\n\n## Authentication\n- Agent API Key: Use `x-agent-api-key` header\n- Admin API Key: Use `x-admin-api-key` header\n- User Auth: Use Bearer token from Supabase Auth\n\n## Rate Limits\n- General: 100 requests/minute\n- AI Endpoints: 20 requests/minute\n- Webhooks: 200 requests/minute",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "agentApiKey",
+      "value": "your-agent-api-key",
+      "type": "string"
+    },
+    {
+      "key": "adminApiKey",
+      "value": "your-admin-api-key",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "your-jwt-token",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-agent-api-key",
+        "in": "header"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Agent Connect",
+      "description": "AI agent integration endpoints for collection calls and AR management",
+      "item": [
+        {
+          "name": "Get Overdue AR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/agent-connect/ar-overdue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent-connect", "ar-overdue"]
+            },
+            "description": "Retrieves all customers with overdue payments for collection calls."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response is successful', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Has data array', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Inventory Alerts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/agent-connect/inventory-alerts?type=all&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent-connect", "inventory-alerts"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "all",
+                  "description": "Type of alerts: low_stock, expiry, out_of_stock, all"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Maximum number of alerts to return"
+                }
+              ]
+            },
+            "description": "Retrieves low stock and expiry alerts for inventory management."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Has alerts data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Apply Discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"invoice_id\": \"inv-123\",\n    \"discount_type\": \"percentage\",\n    \"discount_value\": 10,\n    \"reason\": \"Loyalty discount\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/agent-connect/apply-discount",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent-connect", "apply-discount"]
+            },
+            "description": "Applies a discount to an existing invoice."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Discount applied', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Log Interaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"call_id\": \"call-123\",\n    \"phone_number\": \"+919876543210\",\n    \"duration_seconds\": 120,\n    \"transcript\": \"Customer promised payment by Friday\",\n    \"sentiment\": \"positive\",\n    \"promised_payment_date\": \"2024-01-15\",\n    \"outcome\": \"promised\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/agent-connect/log-interaction",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent-connect", "log-interaction"]
+            },
+            "description": "Logs a call interaction from the VAPI AI agent."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Trigger Collection Calls",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cron/trigger-vapi-calls",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cron", "trigger-vapi-calls"]
+            },
+            "description": "Triggers VAPI AI agent calls to all overdue customers."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Calls initiated', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Command Center",
+      "description": "AI-powered command center for sales analytics and automation",
+      "item": [
+        {
+          "name": "Chat with AI",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"message\": \"Show me top 5 retailers with highest overdue payments\",\n    \"context\": {\n        \"region\": \"Maharashtra\",\n        \"timeframe\": \"30days\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/command-center/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "command-center", "chat"]
+            },
+            "description": "Natural language interface to query business data."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Has AI response', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "    pm.expect(jsonData.response).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/command-center/dashboard?region=Maharashtra&timeframe=30days",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "command-center", "dashboard"],
+              "query": [
+                {
+                  "key": "region",
+                  "value": "Maharashtra",
+                  "description": "Filter by region"
+                },
+                {
+                  "key": "timeframe",
+                  "value": "30days",
+                  "description": "Time range: 7days, 30days, 90days, 6months, 1year"
+                }
+              ]
+            },
+            "description": "Returns aggregated data for the command center dashboard."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Administrative endpoints for system management",
+      "item": [
+        {
+          "name": "Emergency Stop",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-admin-api-key",
+                "value": "{{adminApiKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"level\": \"AGENT_PAUSE\",\n    \"reason\": \"Scheduled maintenance window\",\n    \"adminId\": \"admin-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/emergency/stop",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "emergency", "stop"]
+            },
+            "description": "Activates an emergency stop level. Levels: FULL_STOP, AGENT_PAUSE, APPROVAL_MODE"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Emergency stop activated', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Emergency Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-admin-api-key",
+                "value": "{{adminApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/emergency/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "emergency", "status"]
+            },
+            "description": "Returns the current emergency stop status."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resume from Emergency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-admin-api-key",
+                "value": "{{adminApiKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reason\": \"Maintenance complete\",\n    \"adminId\": \"admin-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/emergency/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "emergency", "resume"]
+            },
+            "description": "Deactivates the current emergency stop level."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Admin Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/metrics?timeRange=6months",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "metrics"],
+              "query": [
+                {
+                  "key": "timeRange",
+                  "value": "6months",
+                  "description": "Time range: 3months, 6months, 1year"
+                }
+              ]
+            },
+            "description": "Returns comprehensive metrics for the admin dashboard."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Accounts Receivable",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/accounts-receivable?status=overdue&sort_by=due_date&sort_order=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "admin", "accounts-receivable"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "overdue",
+                  "description": "Filter by status: pending, partially_paid, overdue, all"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "due_date",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "asc",
+                  "description": "Sort order: asc, desc"
+                }
+              ]
+            },
+            "description": "Returns all invoices with outstanding balance due."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Has AR data', function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Approvals",
+      "description": "Approval workflow management",
+      "item": [
+        {
+          "name": "Get Approval Queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/approvals/queue?status=pending&limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "approvals", "queue"],
+              "query": [
+                {
+                  "key": "actionType",
+                  "value": "",
+                  "description": "Filter by action type",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status: pending, approved, rejected"
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": "Maximum results"
+                }
+              ]
+            },
+            "description": "Returns pending approval requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit for Approval",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"actionType\": \"discount_exceed\",\n    \"actionData\": {\n        \"invoice_id\": \"inv-123\",\n        \"discount_percentage\": 25\n    },\n    \"requestedBy\": \"user-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/approvals/queue",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "approvals", "queue"]
+            },
+            "description": "Submits an action for approval."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"approvedBy\": \"admin-001\",\n    \"notes\": \"Approved after verification\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/approvals/{{approvalId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "approvals", "{{approvalId}}", "approve"]
+            },
+            "description": "Approves a pending approval request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"rejectedBy\": \"admin-001\",\n    \"reason\": \"Discount too high, exceeds policy\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/approvals/{{approvalId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "approvals", "{{approvalId}}", "reject"]
+            },
+            "description": "Rejects a pending approval request."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "description": "Inbound webhook handlers from external services",
+      "item": [
+        {
+          "name": "VAPI Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "x-vapi-webhook-secret",
+                "value": "your-webhook-secret",
+                "type": "text",
+                "description": "Optional webhook verification"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"call.ended\",\n    \"call\": {\n        \"id\": \"call-123\",\n        \"status\": \"completed\",\n        \"duration\": 120,\n        \"customer\": {\n            \"number\": \"+919876543210\",\n            \"name\": \"Rajesh Kumar\"\n        },\n        \"transcript\": \"Customer said they will pay by Friday\",\n        \"endedReason\": \"completed\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/vapi",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "vapi"]
+            },
+            "description": "Receives call events from VAPI AI agent platform."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"event\": \"payment.completed\",\n    \"payload\": {\n        \"id\": \"pay_123\",\n        \"status\": \"captured\",\n        \"amount\": 50000\n    }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/webhooks/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "webhooks", "payments"]
+            },
+            "description": "Receives payment status updates from payment gateway."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "description": "Invoice management operations",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by status",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Returns a paginated list of invoices."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Invoice",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "{{invoiceId}}"]
+            },
+            "description": "Returns invoice details by ID."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Invoice PDF",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "{{invoiceId}}", "pdf"]
+            },
+            "description": "Generates and returns the invoice as a PDF document."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content type is PDF', function() {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('pdf');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Invoice Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices/{{invoiceId}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "invoices", "{{invoiceId}}", "payments"]
+            },
+            "description": "Returns all payments for an invoice."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Intelligence",
+      "description": "AI-powered business intelligence endpoints",
+      "item": [
+        {
+          "name": "Get Demand Forecast",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/intelligence/demand-forecast?timeframe=30days",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "intelligence", "demand-forecast"],
+              "query": [
+                {
+                  "key": "product_id",
+                  "value": "",
+                  "description": "Filter by product",
+                  "disabled": true
+                },
+                {
+                  "key": "region",
+                  "value": "",
+                  "description": "Filter by region",
+                  "disabled": true
+                },
+                {
+                  "key": "timeframe",
+                  "value": "30days",
+                  "description": "Time range: 7days, 30days, 90days"
+                }
+              ]
+            },
+            "description": "Returns AI-powered demand forecasts for inventory planning."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Credit Score",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/intelligence/credit-score?customer_id={{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "intelligence", "credit-score"],
+              "query": [
+                {
+                  "key": "customer_id",
+                  "value": "{{customerId}}",
+                  "description": "Customer ID to score"
+                }
+              ]
+            },
+            "description": "Returns AR risk scoring for a customer."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Referrals",
+      "description": "Referral and loyalty program management",
+      "item": [
+        {
+          "name": "Get Referral Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/referral/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "referral", "stats"]
+            },
+            "description": "Returns referral program statistics for the authenticated user."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/referral/leaderboard?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "referral", "leaderboard"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of entries to return"
+                }
+              ]
+            },
+            "description": "Returns the top referrers in the loyalty program."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Metrics",
+      "description": "Real-time metrics and analytics",
+      "item": [
+        {
+          "name": "Get Realtime Metrics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-agent-api-key",
+                "value": "{{agentApiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/metrics/realtime",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "metrics", "realtime"]
+            },
+            "description": "Returns real-time system and business metrics."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -73,7 +73,7 @@ async function requireAdmin() {
     .select('role')
     .eq('id', user.id)
     .single()
-  if (profErr || !profile || profile.role !== 'SUPER_ADMIN') {
+  if (profErr || !profile || !['SUPER_ADMIN', 'ADMIN', 'SALES', 'SUPPORT'].includes(profile.role)) {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
   return { supabase }
@@ -92,15 +92,17 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'all'
     const sort = searchParams.get('sort') || 'revenue_desc'
 
-    // Base retailer query
+    const MAX_SEARCH_LENGTH = 100
+
     let retailerQuery = supabase
       .from('profiles')
       .select('id, user_name, business_name, phone, address, city, state, pincode, profile_photo, created_at, is_verified', { count: 'exact' })
       .eq('role', 'RETAILER')
 
     if (q) {
+      const sanitizedQ = q.slice(0, MAX_SEARCH_LENGTH).replace(/[%_\\]/g, (match) => `\\${match}`)
       retailerQuery = retailerQuery.or(
-        `user_name.ilike.%${q}%,business_name.ilike.%${q}%,phone.ilike.%${q}%`
+        `user_name.ilike.%${sanitizedQ}%,business_name.ilike.%${sanitizedQ}%,phone.ilike.%${sanitizedQ}%`
       )
     }
     if (status !== 'all') {
@@ -313,6 +315,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
 
 

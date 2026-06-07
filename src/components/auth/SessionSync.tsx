@@ -16,6 +16,14 @@ export function SessionSync({ children, fallback }: SessionSyncProps) {
   const [hasChecked, setHasChecked] = useState(false)
 
   useEffect(() => {
+    if (!initialized || !loading) return
+    const timer = setTimeout(() => {
+      router.replace('/login?error=session_failed')
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [initialized, loading, router])
+
+  useEffect(() => {
     if (!initialized || loading) return
 
     const publicPaths = ['/', '/login', '/signup', '/auth/callback', '/about', '/mission', '/values', '/privacy', '/terms', '/medicines']

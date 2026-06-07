@@ -25,7 +25,9 @@ export async function GET(
         state,
         pincode,
         gst_number,
-        phone
+        phone,
+        drug_license_20b,
+        drug_license_21b
       `)
       .eq('id', id)
       .single()

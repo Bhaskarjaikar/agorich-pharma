@@ -79,7 +79,7 @@ export class AuthErrorBoundary extends Component<Props, State> {
                 : 'Something Went Wrong'}
             </h1>
 
-            <p className="text-slate-600 dark:text-slate-400 mb-8">
+            <p className="text-slate-600 dark:text-muted-foreground mb-8">
               {this.state.errorType === 'session_expired'
                 ? 'Your session has expired. Please sign in again to continue.'
                 : this.state.errorType === 'network_error'
@@ -90,14 +90,14 @@ export class AuthErrorBoundary extends Component<Props, State> {
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={this.handleRetry}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-medium hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-medium hover:bg-background dark:hover:bg-slate-200 transition-colors"
               >
                 <ArrowsClockwise className="w-4 h-4" />
                 Try Again
               </button>
               <button
                 onClick={this.handleGoToLogin}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-medium border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white dark:bg-background text-slate-900 dark:text-white rounded-xl font-medium border border-slate-200 dark:border-border hover:bg-slate-50 dark:hover:bg-card transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Go to Login

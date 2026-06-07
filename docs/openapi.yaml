@@ -1,0 +1,1934 @@
+openapi: 3.0.3
+info:
+  title: Agorich Pharma API
+  description: |
+    Comprehensive API documentation for Agorich Pharma's hyperlocal pharma intelligence operating system.
+
+    ## Overview
+    This API provides endpoints for managing the pharmaceutical distribution ecosystem including:
+    - AI-powered collection calls via VAPI
+    - Inventory management and alerts
+    - Invoice processing and approval workflows
+    - Real-time metrics and analytics
+    - Emergency controls and system management
+
+    ## Authentication
+    - **User Authentication**: Supabase Auth with JWT tokens (Cookie-based for web clients)
+    - **Agent API Key**: `x-agent-api-key` header for backend-to-backend communication
+    - **Admin API Key**: `x-admin-api-key` header for admin operations
+
+    ## Rate Limiting
+    - Default: 100 requests per minute per IP
+    - AI endpoints: 20 requests per minute
+    - Webhook endpoints: 200 requests per minute
+  version: 1.0.0
+  contact:
+    name: Agorich Pharma Tech Team
+    email: tech@agorichpharma.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://api.agorichpharma.com
+    description: Production server
+  - url: https://staging-api.agorichpharma.com
+    description: Staging server
+  - url: http://localhost:3000
+    description: Local development
+
+tags:
+  - name: Agent Connect
+    description: AI agent integration endpoints for collection calls and AR management
+  - name: Command Center
+    description: AI-powered command center for sales analytics and automation
+  - name: Admin
+    description: Administrative endpoints for system management
+  - name: Approvals
+    description: Approval workflow management
+  - name: Webhooks
+    description: Inbound webhook handlers from external services
+  - name: Metrics
+    description: Real-time metrics and analytics endpoints
+  - name: Invoices
+    description: Invoice management operations
+  - name: Intelligence
+    description: AI-powered business intelligence endpoints
+  - name: Referrals
+    description: Referral and loyalty program management
+
+paths:
+  /api/agent-connect/ar-overdue:
+    get:
+      tags:
+        - Agent Connect
+      summary: Get overdue accounts receivable
+      description: |
+        Retrieves all customers with overdue payments. Used by the AI agent to trigger collection calls.
+
+        Requires `x-agent-api-key` header matching the configured AGENT_API_KEY.
+      operationId: getOverdueAR
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: x-agent-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Agent API key for authentication
+      responses:
+        '200':
+          description: Successfully retrieved overdue accounts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OverdueARResponse'
+              examples:
+                success:
+                  summary: Successful response
+                  value:
+                    success: true
+                    data:
+                      - customer_id: "cust-123"
+                        business_name: "Apollo Pharmacy"
+                        name: "Rajesh Kumar"
+                        phone: "+919876543210"
+                        overdue_amount: 45000
+                        overdue_invoices_count: 3
+                    count: 1
+        '401':
+          description: Unauthorized - Invalid or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/agent-connect/inventory-alerts:
+    get:
+      tags:
+        - Agent Connect
+      summary: Get inventory alerts
+      description: Retrieves low stock and expiry alerts for inventory management.
+      operationId: getInventoryAlerts
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: x-agent-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [low_stock, expiry, out_of_stock, all]
+            default: all
+          description: Type of alerts to retrieve
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Maximum number of alerts to return
+      responses:
+        '200':
+          description: Successfully retrieved inventory alerts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryAlertsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Agent Connect
+      summary: Create inventory alert
+      description: Creates a new inventory alert notification.
+      operationId: createInventoryAlert
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryAlertCreate'
+      responses:
+        '201':
+          description: Alert created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryAlertResponse'
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/agent-connect/apply-discount:
+    post:
+      tags:
+        - Agent Connect
+      summary: Apply discount to invoice
+      description: |
+        Applies a discount to an existing invoice. Requires approval for discounts exceeding thresholds.
+
+        Discount types:
+        - percentage: Percentage discount (0-100)
+        - fixed: Fixed amount discount in INR
+      operationId: applyDiscount
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyDiscountRequest'
+            examples:
+              percentage:
+                summary: Apply 10% discount
+                value:
+                  invoice_id: "inv-123"
+                  discount_type: "percentage"
+                  discount_value: 10
+                  reason: "Loyalty discount for bulk order"
+              fixed:
+                summary: Apply fixed discount
+                value:
+                  invoice_id: "inv-123"
+                  discount_type: "fixed"
+                  discount_value: 5000
+                  reason: "Festival offer"
+      responses:
+        '200':
+          description: Discount applied successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApplyDiscountResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Discount exceeds approval threshold
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequiredResponse'
+
+  /api/agent-connect/log-interaction:
+    post:
+      tags:
+        - Agent Connect
+      summary: Log AI agent interaction
+      description: Logs a call interaction from the VAPI AI agent.
+      operationId: logInteraction
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogInteractionRequest'
+      responses:
+        '201':
+          description: Interaction logged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogInteractionResponse'
+
+  /api/command-center/chat:
+    post:
+      tags:
+        - Command Center
+      summary: Chat with AI command center
+      description: |
+        Natural language interface to the command center. Accepts conversational queries
+        and returns AI-powered insights about sales, inventory, and AR data.
+      operationId: commandCenterChat
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            example:
+              message: "Show me the top 5 retailers with highest overdue payments"
+              context:
+                region: "Maharashtra"
+                timeframe: "30days"
+      responses:
+        '200':
+          description: AI response generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/command-center/dashboard:
+    get:
+      tags:
+        - Command Center
+      summary: Get command center dashboard data
+      description: Returns aggregated data for the command center dashboard.
+      operationId: getDashboard
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: region
+          in: query
+          schema:
+            type: string
+          description: Filter by region
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [7days, 30days, 90days, 6months, 1year]
+            default: 30days
+      responses:
+        '200':
+          description: Dashboard data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+
+  /api/admin/emergency/stop:
+    post:
+      tags:
+        - Admin
+      summary: Activate emergency stop
+      description: |
+        Activates an emergency stop level for the system.
+
+        **Stop Levels:**
+        - `FULL_STOP`: Complete system shutdown
+        - `AGENT_PAUSE`: Pause all AI agent activities
+        - `APPROVAL_MODE`: Require approval for all actions
+
+        Requires `x-admin-api-key` header.
+      operationId: activateEmergencyStop
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmergencyStopRequest'
+            examples:
+              full_stop:
+                summary: Full System Stop
+                value:
+                  level: "FULL_STOP"
+                  reason: "Critical system issue detected"
+                  adminId: "admin-001"
+              agent_pause:
+                summary: Agent Pause
+                value:
+                  level: "AGENT_PAUSE"
+                  reason: "Scheduled maintenance window"
+      responses:
+        '200':
+          description: Emergency stop activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyStopResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/emergency/status:
+    get:
+      tags:
+        - Admin
+      summary: Get emergency stop status
+      description: Returns the current emergency stop status of the system.
+      operationId: getEmergencyStatus
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Current status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyStatusResponse'
+
+  /api/admin/emergency/resume:
+    post:
+      tags:
+        - Admin
+      summary: Resume from emergency stop
+      description: Deactivates the current emergency stop level.
+      operationId: resumeFromEmergency
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                adminId:
+                  type: string
+      responses:
+        '200':
+          description: System resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmergencyResumeResponse'
+
+  /api/admin/metrics:
+    get:
+      tags:
+        - Admin
+      summary: Get admin dashboard metrics
+      description: |
+        Returns comprehensive metrics for the admin dashboard including:
+        - Sales totals by time range
+        - Invoice statistics
+        - User counts
+        - Payment breakdowns
+      operationId: getAdminMetrics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: timeRange
+          in: query
+          schema:
+            type: string
+            enum: [3months, 6months, 1year]
+            default: 6months
+      responses:
+        '200':
+          description: Metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMetricsResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden - Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/accounts-receivable:
+    get:
+      tags:
+        - Admin
+      summary: Get accounts receivable
+      description: Returns all invoices with outstanding balance due.
+      operationId: getAccountsReceivable
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, partially_paid, overdue, all]
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            default: due_date
+        - name: sort_order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: AR data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountsReceivableResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/rollback/{actionId}:
+    get:
+      tags:
+        - Admin
+      summary: Get rollback action details
+      description: Retrieves details of a specific rollback action.
+      operationId: getRollbackAction
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Action details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RollbackActionResponse'
+
+  /api/admin/notifications:
+    get:
+      tags:
+        - Admin
+      summary: Get system notifications
+      description: Retrieves system notifications for admin dashboard.
+      operationId: getNotifications
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Notifications retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationsResponse'
+    post:
+      tags:
+        - Admin
+      summary: Create notification
+      description: Creates a new system notification.
+      operationId: createNotification
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreate'
+
+  /api/approvals/queue:
+    get:
+      tags:
+        - Approvals
+      summary: Get approval queue
+      description: Returns pending approval requests.
+      operationId: getApprovalQueue
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: actionType
+          in: query
+          schema:
+            type: string
+          description: Filter by action type
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+            default: pending
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Approval queue retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalQueueResponse'
+    post:
+      tags:
+        - Approvals
+      summary: Submit for approval
+      description: |
+        Submits an action for approval. If the action is below the approval threshold,
+        it is executed directly without requiring approval.
+      operationId: submitForApproval
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRequest'
+      responses:
+        '200':
+          description: Request processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/approvals/{id}/approve:
+    post:
+      tags:
+        - Approvals
+      summary: Approve a pending request
+      description: Approves a pending approval request.
+      operationId: approveRequest
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                approvedBy:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Request approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalActionResponse'
+
+  /api/approvals/{id}/reject:
+    post:
+      tags:
+        - Approvals
+      summary: Reject a pending request
+      description: Rejects a pending approval request.
+      operationId: rejectRequest
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejectedBy:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Request rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalActionResponse'
+
+  /api/webhooks/vapi:
+    post:
+      tags:
+        - Webhooks
+      summary: VAPI webhook handler
+      description: |
+        Receives call events from VAPI AI agent platform.
+
+        Supported events:
+        - `call.ended`: Triggered when a call completes
+
+        Extracts sentiment and promised payment dates from call transcripts using AI.
+      operationId: handleVapiWebhook
+      security:
+        - WebhookSecretAuth: []
+      parameters:
+        - name: x-vapi-webhook-secret
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Optional webhook secret for verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VapiWebhookPayload'
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/webhooks/payments:
+    post:
+      tags:
+        - Webhooks
+      summary: Payment gateway webhook
+      description: Receives payment status updates from payment gateway (Razorpay).
+      operationId: handlePaymentWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentWebhookPayload'
+      responses:
+        '200':
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/metrics/realtime:
+    get:
+      tags:
+        - Metrics
+      summary: Get real-time metrics
+      description: Returns real-time system and business metrics.
+      operationId: getRealtimeMetrics
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealtimeMetricsResponse'
+
+  /api/intelligence/demand-forecast:
+    get:
+      tags:
+        - Intelligence
+      summary: Get demand forecast
+      description: Returns AI-powered demand forecasts for inventory planning.
+      operationId: getDemandForecast
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: product_id
+          in: query
+          schema:
+            type: string
+        - name: region
+          in: query
+          schema:
+            type: string
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [7days, 30days, 90days]
+            default: 30days
+      responses:
+        '200':
+          description: Forecast retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemandForecastResponse'
+
+  /api/intelligence/credit-score:
+    get:
+      tags:
+        - Intelligence
+      summary: Get customer credit score
+      description: Returns AR risk scoring for a customer.
+      operationId: getCreditScore
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: customer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Credit score retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditScoreResponse'
+
+  /api/invoices:
+    get:
+      tags:
+        - Invoices
+      summary: List invoices
+      description: Returns a paginated list of invoices.
+      operationId: listInvoices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoices retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceListResponse'
+    post:
+      tags:
+        - Invoices
+      summary: Create invoice
+      description: Creates a new invoice.
+      operationId: createInvoice
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceCreate'
+      responses:
+        '201':
+          description: Invoice created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+
+  /api/invoices/{id}:
+    get:
+      tags:
+        - Invoices
+      summary: Get invoice details
+      operationId: getInvoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+
+  /api/invoices/{id}/approve:
+    post:
+      tags:
+        - Invoices
+      summary: Approve invoice
+      description: Approves a pending invoice.
+      operationId: approveInvoice
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+
+  /api/invoices/{id}/payments:
+    get:
+      tags:
+        - Invoices
+      summary: Get invoice payments
+      description: Returns all payments for an invoice.
+      operationId: getInvoicePayments
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payments retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoicePaymentsResponse'
+
+  /api/invoices/{id}/pdf:
+    get:
+      tags:
+        - Invoices
+      summary: Download invoice PDF
+      description: Generates and returns the invoice as a PDF document.
+      operationId: getInvoicePdf
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PDF generated
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /api/referral/stats:
+    get:
+      tags:
+        - Referrals
+      summary: Get referral statistics
+      description: Returns referral program statistics for the authenticated user.
+      operationId: getReferralStats
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Stats retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferralStatsResponse'
+
+  /api/referral/leaderboard:
+    get:
+      tags:
+        - Referrals
+      summary: Get referral leaderboard
+      description: Returns the top referrers in the loyalty program.
+      operationId: getReferralLeaderboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Leaderboard retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaderboardResponse'
+
+  /api/cron/trigger-vapi-calls:
+    post:
+      tags:
+        - Agent Connect
+      summary: Trigger collection calls
+      description: |
+        Triggers VAPI AI agent calls to all overdue customers.
+
+        This endpoint is typically called by a cron job to initiate collection calls.
+      operationId: triggerVapiCalls
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Calls initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TriggerCallsResponse'
+
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: List products
+      description: Returns a list of all products.
+      operationId: listProducts
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Products retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+
+  /api/health/agents/{agentName}/logs:
+    get:
+      tags:
+        - Health
+      summary: Get agent health logs
+      description: Returns health monitoring logs for a specific AI agent.
+      operationId: getAgentLogs
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: agentName
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [vapi, openai, inventory]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: Logs retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentLogsResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-agent-api-key
+      description: API key for agent-to-agent communication
+    AdminApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-admin-api-key
+      description: Admin API key for administrative operations
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Supabase Auth
+    WebhookSecretAuth:
+      type: apiKey
+      in: header
+      name: x-vapi-webhook-secret
+      description: Webhook verification secret
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Error message description"
+      required:
+        - success
+        - error
+
+    OverdueCustomer:
+      type: object
+      properties:
+        customer_id:
+          type: string
+          example: "cust-123"
+        business_name:
+          type: string
+          example: "Apollo Pharmacy"
+        name:
+          type: string
+          example: "Rajesh Kumar"
+        phone:
+          type: string
+          example: "+919876543210"
+        overdue_amount:
+          type: number
+          format: float
+          example: 45000
+        overdue_invoices_count:
+          type: integer
+          example: 3
+      required:
+        - customer_id
+        - business_name
+        - phone
+        - overdue_amount
+
+    OverdueARResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverdueCustomer'
+        count:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    InventoryAlert:
+      type: object
+      properties:
+        id:
+          type: string
+        product_id:
+          type: string
+        product_name:
+          type: string
+        alert_type:
+          type: string
+          enum: [low_stock, expiry, out_of_stock]
+        current_stock:
+          type: integer
+        threshold:
+          type: integer
+        expiry_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+
+    InventoryAlertsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryAlert'
+        count:
+          type: integer
+
+    InventoryAlertCreate:
+      type: object
+      required:
+        - product_id
+        - alert_type
+      properties:
+        product_id:
+          type: string
+        alert_type:
+          type: string
+          enum: [low_stock, expiry, out_of_stock]
+        current_stock:
+          type: integer
+        threshold:
+          type: integer
+        expiry_date:
+          type: string
+          format: date
+
+    InventoryAlertResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/InventoryAlert'
+
+    ApplyDiscountRequest:
+      type: object
+      required:
+        - invoice_id
+        - discount_type
+        - discount_value
+      properties:
+        invoice_id:
+          type: string
+        discount_type:
+          type: string
+          enum: [percentage, fixed]
+        discount_value:
+          type: number
+          minimum: 0
+        reason:
+          type: string
+
+    ApplyDiscountResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        invoice_id:
+          type: string
+        discount_applied:
+          type: number
+        new_grand_total:
+          type: number
+
+    ApprovalRequiredResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        requiresApproval:
+          type: boolean
+          example: true
+        approvalId:
+          type: string
+        thresholdInfo:
+          type: object
+          properties:
+            type:
+              type: string
+            exceededAmount:
+              type: number
+            message:
+              type: string
+
+    LogInteractionRequest:
+      type: object
+      required:
+        - call_id
+        - phone_number
+        - transcript
+      properties:
+        call_id:
+          type: string
+        phone_number:
+          type: string
+        duration_seconds:
+          type: integer
+        transcript:
+          type: string
+        sentiment:
+          type: string
+          enum: [positive, negative, neutral]
+        promised_payment_date:
+          type: string
+          format: date
+        outcome:
+          type: string
+          enum: [promised, refused, callback, no_answer]
+
+    LogInteractionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        interaction_id:
+          type: string
+
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          example: "Show me the top 5 retailers with highest overdue payments"
+        context:
+          type: object
+          properties:
+            region:
+              type: string
+            timeframe:
+              type: string
+
+    ChatResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        response:
+          type: string
+        data:
+          type: object
+          description: Structured data if applicable (charts, tables, etc.)
+        suggestions:
+          type: array
+          items:
+            type: string
+
+    DashboardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        sales:
+          type: object
+          properties:
+            total:
+              type: number
+            orders:
+              type: integer
+            avgOrderValue:
+              type: number
+        inventory:
+          type: object
+          properties:
+            lowStockAlerts:
+              type: integer
+            outOfStock:
+              type: integer
+        ar:
+          type: object
+          properties:
+            totalOutstanding:
+              type: number
+            overdueCount:
+              type: integer
+
+    EmergencyStopRequest:
+      type: object
+      required:
+        - level
+        - reason
+      properties:
+        level:
+          type: string
+          enum: [FULL_STOP, AGENT_PAUSE, APPROVAL_MODE]
+        reason:
+          type: string
+        adminId:
+          type: string
+
+    EmergencyStopResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        level:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    EmergencyStatusResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        isEmergencyStopActive:
+          type: boolean
+        currentLevel:
+          type: string
+          nullable: true
+        activatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        activatedBy:
+          type: string
+          nullable: true
+
+    EmergencyResumeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    AdminMetricsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            sales:
+              type: object
+            invoices:
+              type: object
+            users:
+              type: object
+            payments:
+              type: object
+
+    AccountsReceivableInvoice:
+      type: object
+      properties:
+        id:
+          type: string
+        invoice_number:
+          type: string
+        customer_id:
+          type: string
+        customer_name:
+          type: string
+        customer_business_name:
+          type: string
+        customer_phone:
+          type: string
+        grand_total:
+          type: number
+        advance_paid:
+          type: number
+        balance_due:
+          type: number
+        payment_status:
+          type: string
+        gst_type:
+          type: string
+        place_of_supply:
+          type: string
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        status:
+          type: string
+        days_overdue:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    AccountsReceivableResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountsReceivableInvoice'
+        summary:
+          type: object
+          properties:
+            totalOutstanding:
+              type: number
+            totalAdvanceCollected:
+              type: number
+            invoiceCount:
+              type: integer
+
+    RollbackActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        actionId:
+          type: string
+        actionType:
+          type: string
+        data:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    NotificationsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        unreadCount:
+          type: integer
+
+    NotificationCreate:
+      type: object
+      required:
+        - type
+        - title
+        - message
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        message:
+          type: string
+        user_id:
+          type: string
+
+    ApprovalRequest:
+      type: object
+      required:
+        - actionType
+        - actionData
+      properties:
+        actionType:
+          type: string
+          enum: [discount_exceed, price_override, write_off, user_role_change, emergency_stop]
+        actionData:
+          type: object
+        requestedBy:
+          type: string
+
+    ApprovalResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        requiresApproval:
+          type: boolean
+        approvalId:
+          type: string
+          nullable: true
+        message:
+          type: string
+
+    ApprovalActionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    ApprovalQueueResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            type: object
+        count:
+          type: integer
+
+    VapiWebhookPayload:
+      type: object
+      required:
+        - type
+        - call
+      properties:
+        type:
+          type: string
+          example: "call.ended"
+        call:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+            duration:
+              type: integer
+            customer:
+              type: object
+              properties:
+                number:
+                  type: string
+                name:
+                  type: string
+            transcript:
+              type: string
+            endedReason:
+              type: string
+
+    PaymentWebhookPayload:
+      type: object
+      required:
+        - event
+        - payload
+      properties:
+        event:
+          type: string
+        payload:
+          type: object
+          properties:
+            id:
+              type: string
+            status:
+              type: string
+            amount:
+              type: number
+
+    RealtimeMetricsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        metrics:
+          type: object
+          properties:
+            activeOrders:
+              type: integer
+            pendingApprovals:
+              type: integer
+            todaySales:
+              type: number
+            overdueAR:
+              type: number
+
+    DemandForecastResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        forecast:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id:
+                type: string
+              predicted_demand:
+                type: integer
+              confidence:
+                type: number
+              period:
+                type: string
+
+    CreditScoreResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        customer_id:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        risk_level:
+          type: string
+          enum: [low, medium, high, critical]
+        factors:
+          type: array
+          items:
+            type: string
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        invoice_number:
+          type: string
+        customer_id:
+          type: string
+        grand_total:
+          type: number
+        advance_paid:
+          type: number
+        balance_due:
+          type: number
+        status:
+          type: string
+        payment_status:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    InvoiceCreate:
+      type: object
+      required:
+        - customer_id
+        - items
+      properties:
+        customer_id:
+          type: string
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              product_id:
+                type: string
+              quantity:
+                type: integer
+              unit_price:
+                type: number
+        gst_type:
+          type: string
+        place_of_supply:
+          type: string
+
+    InvoiceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Invoice'
+
+    InvoiceListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            limit:
+              type: integer
+            total:
+              type: integer
+
+    InvoicePaymentsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        payments:
+          type: array
+          items:
+            type: object
+
+    ReferralStats:
+      type: object
+      properties:
+        totalReferrals:
+          type: integer
+        successfulReferrals:
+          type: integer
+        totalEarnings:
+          type: number
+        currentTier:
+          type: string
+        points:
+          type: integer
+
+    ReferralStatsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/ReferralStats'
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        user_id:
+          type: string
+        user_name:
+          type: string
+        business_name:
+          type: string
+        referral_count:
+          type: integer
+        points:
+          type: integer
+
+    LeaderboardResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaderboardEntry'
+
+    TriggerCallsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        callsInitiated:
+          type: integer
+        results:
+          type: array
+          items:
+            type: object
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        category:
+          type: string
+        mrp:
+          type: number
+        stock_quantity:
+          type: integer
+
+    ProductListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        count:
+          type: integer
+
+    AgentLogEntry:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        level:
+          type: string
+          enum: [info, warn, error]
+        message:
+          type: string
+        metadata:
+          type: object
+
+    AgentLogsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        agentName:
+          type: string
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentLogEntry'

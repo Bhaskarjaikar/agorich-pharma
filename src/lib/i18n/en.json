@@ -141,6 +141,17 @@
         "settings": "Settings"
       }
     },
+    "distributor": {
+      "title": "Distributor Dashboard",
+      "menu": {
+        "dashboard": "Dashboard",
+        "inventory": "My Products",
+        "invoices": "Invoices",
+        "createInvoice": "Create Invoice",
+        "referrals": "Referrals",
+        "settings": "Settings"
+      }
+    },
     "admin": {
       "title": "Admin Dashboard",
       "overview": "Overview",

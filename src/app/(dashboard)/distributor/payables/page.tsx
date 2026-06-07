@@ -131,14 +131,14 @@ function PaymentDialog({ invoice, open, onClose, onSuccess }: PaymentDialogProps
               <h2 className="text-xl font-bold text-foreground">Pay Invoice</h2>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-background transition-colors"
               >
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
             <div className="space-y-4">
-              <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl">
+              <div className="p-4 bg-slate-50 dark:bg-background rounded-xl">
                 <div className="flex justify-between mb-2">
                   <span className="text-slate-500">Invoice</span>
                   <span className="font-semibold">{invoice.invoice_number}</span>
@@ -175,7 +175,7 @@ function PaymentDialog({ invoice, open, onClose, onSuccess }: PaymentDialogProps
                       className={`p-2 rounded-lg border text-sm font-medium transition-colors ${
                         paymentMethod === method
                           ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                          : 'border-slate-200 dark:border-border hover:border-slate-300 dark:hover:border-slate-600'
                       }`}
                     >
                       {method.replace('_', ' ')}

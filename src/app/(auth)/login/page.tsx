@@ -56,7 +56,7 @@ function getInitials(name: string | null, email: string): string {
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, profile, loading: authLoading, signInWithGoogle, signOut, lastUsedAccount, allAccounts, switchAccount, removeAccount } = useAuth()
+  const { user, profile, loading: authLoading, signInWithGoogle, signOut, lastUsedAccount, allAccounts, removeAccount } = useAuth()
 
   const [error, setError] = useState<string | null>(null)
   const [email, setEmail] = useState('')
@@ -96,6 +96,7 @@ export default function LoginPage() {
         'exchange-failed': 'Authentication failed. Please try signing in again.',
         'callback_error': 'Something went wrong. Please try again.',
         'session_expired': 'Your session has expired. Please sign in again.',
+        'session_failed': 'Session expired or failed. Please sign in again.',
         'unauthorized': 'You are not authorized to access this page.',
         'profile_missing': 'Profile not found. Please complete registration.',
         'account_not_found': 'This account no longer exists. Please sign in with a different method.',
@@ -119,16 +120,46 @@ export default function LoginPage() {
     }
   }, [authLoading])
 
+  const resolvePostLoginDestination = useCallback(async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle()
+
+      let destination = getRoleDestination(userId, data?.role)
+      const redirect = searchParams?.get('redirect')
+      if (redirect?.startsWith('/')) {
+        destination = redirect
+      }
+      return destination
+    } catch {
+      let destination = getRoleDestination(userId, null)
+      const redirect = searchParams?.get('redirect')
+      if (redirect?.startsWith('/')) {
+        destination = redirect
+      }
+      return destination
+    }
+  }, [searchParams])
+
   const handleContinueAsLastUsed = useCallback(async () => {
     if (!lastUsedAccount) return
+
+    if (lastUsedAccount.provider && lastUsedAccount.provider !== 'email') {
+      setError('This account requires sign-in with ' + (lastUsedAccount.provider === 'google' ? 'Google' : lastUsedAccount.provider) + '. Please use the sign-in option below.')
+      setShowAccountSwitcher(true)
+      return
+    }
 
     setIsContinuingAsLastUsed(true)
     setError(null)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: lastUsedAccount.email,
-        password: '',
+        password: lastUsedAccount.password || '',
       })
 
       if (signInError) {
@@ -141,29 +172,32 @@ export default function LoginPage() {
         return
       }
 
-      let destination = getRoleDestination(user?.id, profile?.role)
-      const redirect = searchParams?.get('redirect')
-      if (redirect?.startsWith('/')) {
-        destination = redirect
-      }
-
-      router.push(destination)
+      const userId = data.user?.id
+      if (!userId) throw new Error('Login failed. Please try again.')
+      const destination = await resolvePostLoginDestination(userId)
+      router.replace(destination)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to continue. Please sign in manually.'
       setError(message)
     } finally {
       setIsContinuingAsLastUsed(false)
     }
-  }, [lastUsedAccount, user, profile, searchParams, router])
+  }, [lastUsedAccount, resolvePostLoginDestination, router])
 
   const handleSwitchToAccount = useCallback(async (account: LastUsedAccount) => {
+    if (account.provider && account.provider !== 'email') {
+      setError('This account requires sign-in with ' + (account.provider === 'google' ? 'Google' : account.provider) + '. Please use that sign-in option instead.')
+      setShowAccountSwitcher(false)
+      return
+    }
+
     setShowAccountSwitcher(false)
     setError(null)
 
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: account.email,
-        password: '',
+        password: account.password || '',
       })
 
       if (signInError) {
@@ -175,18 +209,15 @@ export default function LoginPage() {
         return
       }
 
-      let destination = getRoleDestination(user?.id, profile?.role)
-      const redirect = searchParams?.get('redirect')
-      if (redirect?.startsWith('/')) {
-        destination = redirect
-      }
-
-      router.push(destination)
+      const userId = data.user?.id
+      if (!userId) throw new Error('Login failed. Please try again.')
+      const destination = await resolvePostLoginDestination(userId)
+      router.replace(destination)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to switch account. Please sign in manually.'
       setError(message)
     }
-  }, [user, profile, searchParams, router])
+  }, [resolvePostLoginDestination, router])
 
   const handleSignOut = useCallback(async () => {
     await signOut()
@@ -248,13 +279,10 @@ export default function LoginPage() {
         throw new Error(typeof refreshError === 'string' ? refreshError : 'Session refresh failed')
       }
 
-      let destination = getRoleDestination(data.user?.id, profile?.role)
-      const redirect = searchParams?.get('redirect')
-      if (redirect?.startsWith('/')) {
-        destination = redirect
-      }
-
-      router.push(destination)
+      const userId = data.user?.id
+      if (!userId) throw new Error('Login failed. Please try again.')
+      const destination = await resolvePostLoginDestination(userId)
+      router.replace(destination)
     } catch (err: unknown) {
       const message = err instanceof Error && err.message ? err.message : 'Login failed. Please try again.'
       setError(message)
@@ -298,6 +326,20 @@ export default function LoginPage() {
   }
 
   const loading = !initialized || authLoading
+  const isOAuthSuccess = searchParams?.get('oauth') === 'success'
+  const isSettingUpOAuth = isOAuthSuccess && user && !profile
+  const isAuthenticated = !!user
+
+  // Handle authenticated user redirect - single useEffect
+  useEffect(() => {
+    if (isAuthenticated && !isSettingUpOAuth && !isContinuingAsLastUsed) {
+      resolvePostLoginDestination(user.id)
+        .then((destination) => {
+          router.replace(destination)
+        })
+        .catch(() => {})
+    }
+  }, [isAuthenticated, isSettingUpOAuth, isContinuingAsLastUsed, user, resolvePostLoginDestination, router])
 
   if (loading) {
     return (
@@ -312,56 +354,43 @@ export default function LoginPage() {
     )
   }
 
-  const isOAuthSuccess = searchParams?.get('oauth') === 'success'
-  const isSettingUpOAuth = isOAuthSuccess && user && !profile
-  const isAuthenticated = !!user
+  // if (isAuthenticated && !isSettingUpOAuth && !isContinuingAsLastUsed) {
+  //   return (
+  //     <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4" />
+  //         <p className={`text-sm ${darkMode ? 'text-white/80' : 'text-slate-600'}`}>
+  //           Redirecting...
+  //         </p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
-  if (isAuthenticated && !isSettingUpOAuth) {
-    let destination = getRoleDestination(user.id, profile?.role)
-    const redirect = searchParams?.get('redirect')
-    if (redirect?.startsWith('/')) {
-      destination = redirect
-    }
-
-    if (!isContinuingAsLastUsed) {
-      router.replace(destination)
-      return (
-        <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4" />
-            <p className={`text-sm ${darkMode ? 'text-white/80' : 'text-slate-600'}`}>
-              Redirecting...
-            </p>
-          </div>
-        </div>
-      )
-    }
-  }
-
-  if (isOAuthSuccess && user && !profile) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4" />
-          <p className={`text-sm ${darkMode ? 'text-white/80' : 'text-slate-600'}`}>
-            Setting up your account...
-          </p>
-        </div>
-      </div>
-    )
-  }
+  // if (isOAuthSuccess && user && !profile) {
+  //   return (
+  //     <div className={`min-h-screen flex items-center justify-center transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+  //       <div className="text-center">
+  //         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4" />
+  //         <p className={`text-sm ${darkMode ? 'text-white/80' : 'text-slate-600'}`}>
+  //           Setting up your account...
+  //         </p>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${darkMode ? 'bg-slate-950' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex items-center justify-center p-4 transition-colors duration-300 ${darkMode ? 'bg-background' : 'bg-background'}`}>
       <button
         onClick={() => setDarkMode(!darkMode)}
-        className={`fixed top-4 right-4 p-2 rounded-lg transition-colors ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white/80 hover:bg-white text-slate-700 shadow-sm'}`}
+        className={`fixed top-4 right-4 p-2 rounded-lg transition-colors ${darkMode ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-card/80 hover:bg-card text-foreground shadow-sm'}`}
         aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {darkMode ? <Sun className="w-5 h-5" weight="fill" /> : <Moon className="w-5 h-5" weight="fill" />}
       </button>
 
-      <Card className={`w-full max-w-md shadow-2xl transition-colors duration-300 ${darkMode ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-slate-200'}`}>
+      <Card className={`w-full max-w-md shadow-2xl transition-colors duration-300 ${darkMode ? 'bg-card/90 border-border' : 'bg-card/90 border-border'}`}>
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div className="relative w-16 h-16">
@@ -374,10 +403,10 @@ export default function LoginPage() {
               />
             </div>
           </div>
-          <CardTitle className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
+          <CardTitle className="text-2xl font-bold text-foreground">
             Welcome Back
           </CardTitle>
-          <CardDescription className={darkMode ? 'text-slate-400' : 'text-slate-500'}>
+          <CardDescription className="text-muted-foreground">
             Sign in to your Agorich Pharma account
           </CardDescription>
         </CardHeader>
@@ -437,12 +466,12 @@ export default function LoginPage() {
                         onClick={() => setSelectedRole('RETAILER')}
                         className={`p-6 rounded-xl border-2 font-medium transition-all duration-200 text-center ${
                           darkMode
-                            ? 'bg-slate-800 text-white border-slate-700 hover:border-emerald-500 hover:bg-slate-700'
-                            : 'bg-white text-slate-900 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50'
+                            ? 'bg-background text-white border-border hover:border-emerald-500 hover:bg-card'
+                            : 'bg-card text-foreground border-input hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
                         }`}
                       >
                         <div className="flex flex-col items-center gap-2">
-                          <Users className="w-10 h-10 text-emerald-600" />
+                          <Users className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
                           <span>Retailer</span>
                           <span className="text-xs opacity-70">खुदरा विक्रेता</span>
                         </div>
@@ -452,12 +481,12 @@ export default function LoginPage() {
                         onClick={() => setSelectedRole('DISTRIBUTOR')}
                         className={`p-6 rounded-xl border-2 font-medium transition-all duration-200 text-center ${
                           darkMode
-                            ? 'bg-slate-800 text-white border-slate-700 hover:border-blue-500 hover:bg-slate-700'
-                            : 'bg-white text-slate-900 border-slate-300 hover:border-blue-500 hover:bg-blue-50'
+                            ? 'bg-background text-white border-border hover:border-blue-500 hover:bg-card'
+                            : 'bg-card text-foreground border-input hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/30'
                         }`}
                       >
                         <div className="flex flex-col items-center gap-2">
-                          <Package className="w-10 h-10 text-blue-600" />
+                          <Package className="w-10 h-10 text-blue-600 dark:text-blue-400" />
                           <span>Distributor</span>
                           <span className="text-xs opacity-70">वितरक</span>
                         </div>
@@ -469,8 +498,8 @@ export default function LoginPage() {
                       onClick={() => setSelectedRole('ADMIN')}
                       className={`w-full mt-2 py-3 text-xs font-medium transition-all duration-200 rounded-lg ${
                         darkMode
-                          ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
-                          : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                          ? 'text-muted-foreground hover:text-slate-300 hover:bg-background/50'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                       }`}
                     >
                       Admin Login
@@ -482,7 +511,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowAccountSwitcher(true)}
-                    className={`w-full text-sm ${darkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700'}`}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground"
                   >
                     Sign in with a different account
                   </button>
@@ -496,13 +525,13 @@ export default function LoginPage() {
                 exit={{ opacity: 0, y: -10 }}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <p className={`text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                  <p className="text-sm font-medium text-foreground">
                     Selected: {selectedRole === 'RETAILER' ? 'Retailer' : selectedRole === 'ADMIN' ? 'Admin' : 'Distributor'}
                   </p>
                   <button
                     type="button"
                     onClick={() => setSelectedRole(null)}
-                    className={`text-xs text-blue-600 hover:underline ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     Change
                   </button>
@@ -510,33 +539,31 @@ export default function LoginPage() {
 
                 <form onSubmit={handleLogin} className="space-y-3">
                   <div className="space-y-1">
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Email</label>
+                    <label className="block text-sm font-medium text-foreground">Email</label>
                     <input
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className={`w-full h-12 rounded-xl border-2 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-slate-500'}`}
+                      className="w-full h-12 rounded-xl border-2 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-blue-600 dark:focus:border-blue-500"
                       placeholder="Enter your email"
-                      style={{ WebkitTextFillColor: darkMode ? 'white' : 'rgb(15, 23, 42)' }}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className={`block text-sm font-medium ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>Password</label>
+                    <label className="block text-sm font-medium text-foreground">Password</label>
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className={`w-full h-12 rounded-xl border-2 pr-10 ${darkMode ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-slate-500' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-slate-500'}`}
+                        className="w-full h-12 rounded-xl border-2 pr-10 bg-background border-input text-foreground placeholder:text-muted-foreground focus:border-blue-600 dark:focus:border-blue-500"
                         placeholder="Enter your password"
-                        style={{ WebkitTextFillColor: darkMode ? 'white' : 'rgb(15, 23, 42)' }}
                       />
                       <button
                         type="button"
-                        className={`absolute inset-y-0 right-3 flex items-center transition-colors ${darkMode ? 'text-slate-400 hover:text-slate-300' : 'text-gray-500 hover:text-gray-700'}`}
+                        className="absolute inset-y-0 right-3 flex items-center transition-colors text-muted-foreground hover:text-foreground"
                         onClick={() => setShowPassword((v) => !v)}
                         aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
@@ -561,11 +588,11 @@ export default function LoginPage() {
                 </form>
 
                 <div className="relative my-4">
-                  <div className={`absolute inset-0 flex items-center ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                    <div className={`w-full border-t ${darkMode ? 'border-slate-700' : 'border-slate-300'}`} />
+                  <div className={`absolute inset-0 flex items-center ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
+                    <div className={`w-full border-t ${darkMode ? 'border-border' : 'border-slate-300'}`} />
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className={`px-2 ${darkMode ? 'bg-slate-900/90 text-slate-400' : 'bg-white text-slate-500'}`}>OR</span>
+                    <span className="px-2 bg-card text-muted-foreground">OR</span>
                   </div>
                 </div>
 
@@ -575,8 +602,8 @@ export default function LoginPage() {
                   disabled={isGoogleLoading}
                   className={`w-full flex items-center justify-center gap-3 h-12 rounded-xl border-2 font-medium transition-all duration-200 ${
                     darkMode
-                      ? 'bg-white text-slate-900 border-slate-700 hover:bg-slate-100'
-                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                      ? 'bg-white text-slate-900 border-border hover:bg-slate-100'
+                      : 'bg-card text-foreground border-input hover:bg-muted'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   {isGoogleLoading ? (
@@ -595,7 +622,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedRole(null)}
-                  className={`w-full mt-4 text-sm ${darkMode ? 'text-slate-400 hover:text-slate-300' : 'text-slate-500 hover:text-slate-700'}`}
+                  className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground"
                 >
                   New to Agorich? Use Google to create an account
                 </button>
@@ -603,7 +630,7 @@ export default function LoginPage() {
             )}
           </AnimatePresence>
 
-          <div className={`text-center text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+          <div className="text-center text-xs text-muted-foreground">
             <p>By signing in, you agree to our Terms of Service and Privacy Policy</p>
           </div>
         </CardContent>

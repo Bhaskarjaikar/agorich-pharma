@@ -42,34 +42,34 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
-  /* Professional Soft UI Pharma Color Scheme - HSL */
+  /* Professional Pharma Color Scheme - HSL */
   --color-brand-primary: hsl(213 94% 68%);
   --color-brand-primary-soft: hsl(213 94% 68% / 0.1);
   --color-brand-secondary: hsl(160 84% 39%);
   --color-brand-secondary-soft: hsl(160 84% 39% / 0.1);
-  --color-dashboard-bg: hsl(214 32% 91%);
-  --color-dashboard-bg-dark: hsl(222 84% 5%);
+  --color-dashboard-bg: hsl(45 55% 96%); /* Soft paper off-white */
+  --color-dashboard-bg-dark: hsl(0 0% 0%); /* Pure black */
   --color-card-surface: hsl(0 0% 100%);
-  --color-card-surface-dark: hsl(217 33% 17%);
-  --color-text-main: hsl(222 84% 5%);
-  --color-text-main-dark: hsl(210 40% 98%);
-  --color-text-muted: hsl(215 16% 47%);
-  --color-text-muted-dark: hsl(215 20% 65%);
+  --color-card-surface-dark: hsl(0 0% 10%); /* Slightly lighter black */
+  --color-text-main: hsl(0 0% 10%); /* Very dark gray for high contrast */
+  --color-text-main-dark: hsl(0 0% 95%); /* Very light gray for high contrast */
+  --color-text-muted: hsl(0 0% 40%);
+  --color-text-muted-dark: hsl(0 0% 70%);
 }
 
 :root {
-  /* Semantic Color Palette - Soft UI Light Mode (HSL) */
+  /* Semantic Color Palette - Soft Paper Light Mode (HSL) */
   --brand-primary: 213 94% 68%;
   --brand-primary-soft: 213 94% 68% / 0.1;
   --brand-secondary: 160 84% 39%;
   --brand-secondary-soft: 160 84% 39% / 0.1;
-  --dashboard-bg: 214 32% 91%;
+  --dashboard-bg: 45 55% 96%; /* #FAF8F0 - Soft paper off-white */
   --card-surface: 0 0% 100%;
-  --text-main: 222 84% 5%;
-  --text-muted: 215 16% 47%;
+  --text-main: 0 0% 10%; /* Very dark gray for high contrast on soft paper */
+  --text-muted: 0 0% 40%;
   --text-inverse: 0 0% 100%;
-  --border-color: 214 32% 85%;
-  --border-subtle: 214 32% 88%;
+  --border-color: 45 20% 85%;
+  --border-subtle: 45 20% 90%;
   --accent-hover: 217 91% 60%;
   --accent-secondary-hover: 161 94% 30%;
   --error: 0 84% 60%;
@@ -87,9 +87,9 @@
   --popover-foreground: hsl(var(--text-main));
   --primary: hsl(var(--brand-primary));
   --primary-foreground: hsl(var(--text-inverse));
-  --secondary: hsl(214 32% 95%);
+  --secondary: hsl(45 30% 95%);
   --secondary-foreground: hsl(var(--text-main));
-  --muted: hsl(214 32% 95%);
+  --muted: hsl(45 30% 95%);
   --muted-foreground: hsl(var(--text-muted));
   --accent: hsl(var(--brand-secondary));
   --accent-foreground: hsl(var(--text-inverse));
@@ -102,7 +102,7 @@
   --chart-3: hsl(var(--info));
   --chart-4: 173 80% 40%;
   --chart-5: 158 64% 52%;
-  --sidebar: hsl(214 32% 95%);
+  --sidebar: hsl(45 30% 95%);
   --sidebar-foreground: hsl(var(--text-main));
   --sidebar-primary: hsl(var(--brand-primary));
   --sidebar-primary-foreground: hsl(var(--text-inverse));
@@ -113,18 +113,18 @@
 }
 
 .dark {
-  /* Semantic Color Palette - Peach Black Dark Mode (HSL) */
+  /* Semantic Color Palette - Pure Black Dark Mode (HSL) */
   --brand-primary: 27 87% 67%;
   --brand-primary-soft: 27 87% 67% / 0.2;
   --brand-secondary: 158 64% 52%;
   --brand-secondary-soft: 158 64% 52% / 0.2;
-  --dashboard-bg: 0 0% 4%;
-  --card-surface: 0 0% 8%;
-  --text-main: 60 9.1% 97.8%;
-  --text-muted: 24 5.4% 63.9%;
-  --text-inverse: 0 0% 4%;
-  --border-color: 24 5.4% 26.1%;
-  --border-subtle: 24 5.4% 18.0%;
+  --dashboard-bg: 0 0% 0%; /* #000000 - Pure black */
+  --card-surface: 0 0% 10%; /* Slightly lighter black for cards */
+  --text-main: 0 0% 95%; /* Very light gray for high contrast on black */
+  --text-muted: 0 0% 70%;
+  --text-inverse: 0 0% 0%;
+  --border-color: 0 0% 20%;
+  --border-subtle: 0 0% 15%;
   --accent-hover: 27 87% 77%;
   --accent-secondary-hover: 161 94% 30%;
   --error: 0 91% 71%;
@@ -142,9 +142,9 @@
   --popover-foreground: hsl(var(--text-main));
   --primary: hsl(var(--brand-primary));
   --primary-foreground: hsl(var(--text-inverse));
-  --secondary: hsl(217 33% 20%);
+  --secondary: hsl(0 0% 15%);
   --secondary-foreground: hsl(var(--text-main));
-  --muted: hsl(217 33% 20%);
+  --muted: hsl(0 0% 15%);
   --muted-foreground: hsl(var(--text-muted));
   --accent: hsl(var(--brand-secondary));
   --accent-foreground: hsl(var(--text-inverse));
@@ -157,7 +157,7 @@
   --chart-3: hsl(var(--warning));
   --chart-4: 188 95% 43%;
   --chart-5: 251 91% 71%;
-  --sidebar: hsl(217 33% 20%);
+  --sidebar: hsl(0 0% 15%);
   --sidebar-foreground: hsl(var(--text-main));
   --sidebar-primary: hsl(var(--brand-primary));
   --sidebar-primary-foreground: hsl(var(--text-inverse));
@@ -183,6 +183,24 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  .native-app body {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .native-app input,
+  .native-app textarea,
+  .native-app [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 /* Enhanced smooth scrolling for mobile and desktop */
@@ -195,31 +213,40 @@
   ::-webkit-scrollbar {
     width: 8px;
   }
-  
+
   ::-webkit-scrollbar-track {
-    background: hsl(214 32% 91%);
+    background: var(--background);
   }
-  
+
   ::-webkit-scrollbar-thumb {
-    background: hsl(213 94% 68%);
+    background: hsl(var(--brand-primary));
     border-radius: 4px;
   }
-  
+
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(213 94% 58%);
+    background: hsl(var(--accent-hover));
   }
-  
+
   .dark ::-webkit-scrollbar-track {
-    background: hsl(222 84% 5%);
+    background: var(--background);
   }
-  
+
   .dark ::-webkit-scrollbar-thumb {
-    background: hsl(27 87% 67%);
+    background: hsl(var(--brand-primary));
   }
-  
+
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: hsl(27 87% 77%);
+    background: hsl(var(--accent-hover));
   }
+}
+
+.native-app {
+  scrollbar-width: none;
+}
+
+.native-app ::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 /* Custom easing curves for dopamine-inducing animations */

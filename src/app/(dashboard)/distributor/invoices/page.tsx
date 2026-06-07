@@ -333,7 +333,7 @@ export default function InvoicesPage() {
   }, [upiPaymentInitiated])
 
   // Validate stock before sending invoice
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const validateStockBeforeSend = async (invoiceId: string, newStatus: Invoice['status']) => {
     setIsCheckingStock(true)
     try {
@@ -1008,26 +1008,30 @@ export default function InvoicesPage() {
 
   // Handle delete invoice with confirmation - Delete from both localStorage and Supabase
   const handleDeleteInvoice = async (invoice: Invoice) => {
+    // CRITICAL: Only allow deleting DRAFT invoices
+    if (invoice.status !== 'DRAFT') {
+      alert(`❌ Only DRAFT invoices can be deleted. This invoice is "${invoice.status}".`)
+      return
+    }
+
     const confirmMessage = `Are you sure you want to delete invoice ${invoice.invoice_number}?\n\nThis action cannot be undone and will permanently remove the invoice from your records.`
     
     if (window.confirm(confirmMessage)) {
       try {
-        // Try to delete from Supabase API first
-        try {
-          const response = await fetch(`/api/invoices/${invoice.id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-          })
-          
-          if (!response.ok) {
-            console.warn('Supabase delete failed, continuing with localStorage delete')
-          }
-        } catch (error) {
-          console.warn('Error deleting from Supabase:', error)
-          // Continue with localStorage delete even if Supabase fails
-        }
+        // Delete from Supabase API first - CRITICAL: Only remove from UI if API succeeds
+        const response = await fetch(`/api/invoices/${invoice.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        })
         
-        // Delete from localStorage
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('❌ Failed to delete invoice from Supabase:', errorData)
+          alert(`❌ Failed to delete invoice: ${errorData.error || 'Please try again.'}`)
+          return // Do NOT remove from localStorage or state if API fails
+        }
+
+        // API succeeded - now remove from localStorage and state
         const existingInvoices: Invoice[] = JSON.parse(localStorage.getItem('distributor_invoices') || '[]')
         const updatedInvoices = existingInvoices.filter((inv: Invoice) => inv.id !== invoice.id)
         localStorage.setItem('distributor_invoices', JSON.stringify(updatedInvoices))
@@ -1046,8 +1050,11 @@ export default function InvoicesPage() {
         }
         
         alert(`✅ Invoice ${invoice.invoice_number} has been deleted successfully.`)
+        
+        // Refresh invoices from API to ensure we have the latest state
+        await loadInvoices()
       } catch (error) {
-        console.error('Error deleting invoice:', error)
+        console.error('❌ Error deleting invoice:', error)
         alert('❌ Failed to delete invoice. Please try again.')
       }
     }
@@ -1078,10 +1085,10 @@ export default function InvoicesPage() {
         transition={{ delay: 0.1 }}
         className="sticky top-0 z-40 w-full"
       >
-        <div className={`flex flex-row gap-2 sm:gap-3 p-2 sm:p-3 rounded-b-2xl shadow-2xl backdrop-blur-xl border-b-2 border-x-2 overflow-x-auto ${darkMode ? 'bg-slate-800/95 border-slate-700/80' : 'bg-white/95 border-slate-200/80'}`}>
+        <div className={`flex flex-row gap-2 sm:gap-3 p-2 sm:p-3 rounded-b-2xl shadow-2xl backdrop-blur-xl border-b-2 border-x-2 overflow-x-auto ${darkMode ? 'bg-background/95 border-border/80' : 'bg-white/95 border-slate-200/80'}`}>
           {/* Dashboard - Inactive (Enhanced) */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-card/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
             onClick={() => router.push('/distributor')}
           >
             <House className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1090,7 +1097,7 @@ export default function InvoicesPage() {
 
           {/* Order Now - Inactive */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-card/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
             onClick={() => router.push('/distributor/create-invoice')}
           >
             <Package className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1099,7 +1106,7 @@ export default function InvoicesPage() {
 
           {/* Routed Orders - Inactive */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-card/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
             onClick={() => router.push('/distributor/routed-orders')}
           >
             <List className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1108,7 +1115,7 @@ export default function InvoicesPage() {
 
           {/* Payables - Inactive */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-card/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
             onClick={() => router.push('/distributor/payables')}
           >
             <CreditCard className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1117,7 +1124,7 @@ export default function InvoicesPage() {
 
           {/* Expiry Watchlist - Inactive */}
           <Button 
-            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-slate-700/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
+            className={`flex-1 h-12 sm:h-14 flex flex-row items-center justify-center gap-2 sm:gap-3 shadow-md hover:shadow-xl transition-all duration-300 rounded-xl hover:scale-[1.02] ${darkMode ? 'bg-card/80 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600/50' : 'bg-slate-100 text-slate-700 hover:bg-white hover:shadow-slate-300/50 border border-slate-200/50'}`}
             onClick={() => router.push('/distributor/expiry-watchlist')}
           >
             <Calendar className="w-5 h-5 sm:w-6 sm:h-6" weight="fill" />
@@ -1352,7 +1359,7 @@ export default function InvoicesPage() {
                   {/* UPI Payment Button */}
                   <Button
                     onClick={() => handleUpiPayment(selectedInvoiceForPayment)}
-                    className={`w-full font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
+                    className={`w-full font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${darkMode ? 'bg-background hover:bg-card text-white' : 'bg-card hover:bg-slate-600 text-white'}`}
                     disabled={isProcessingPayment}
                   >
                     <CreditCard className="mr-2 h-6 w-6" />
@@ -1571,7 +1578,7 @@ export default function InvoicesPage() {
               <Button
                 onClick={() => router.push('/distributor/create-invoice')}
                 size="sm"
-                className="flex-1 sm:w-auto bg-slate-700 hover:bg-slate-600 text-white text-xs"
+                className={`flex-1 sm:w-auto text-xs ${darkMode ? 'bg-card hover:bg-slate-600 text-white' : 'bg-card hover:bg-slate-600 text-white'}`}
               >
                 <Plus className="w-3 h-3 mr-1" />
                 New
@@ -1581,26 +1588,26 @@ export default function InvoicesPage() {
 
           {/* Compact Stats Cards - 2x2 Grid */}
           <div className="grid grid-cols-2 gap-2 mb-3">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className={`${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
               <CardContent className="p-3 flex items-center">
-                <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center mr-2">
-                  <FileText className="w-4 h-4 text-white" />
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 ${darkMode ? 'bg-card' : 'bg-slate-100'}`}>
+                  <FileText className={`w-4 h-4 ${darkMode ? 'text-white' : 'text-slate-700'}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Invoices</p>
-                  <p className="text-lg font-bold text-white">{invoices.length}</p>
+                  <p className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Invoices</p>
+                  <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>{invoices.length}</p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className={`${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
               <CardContent className="p-3 flex items-center">
-                <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center mr-2">
-                  <CurrencyDollar className="w-4 h-4 text-white" />
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-2 ${darkMode ? 'bg-card' : 'bg-slate-100'}`}>
+                  <CurrencyDollar className={`w-4 h-4 ${darkMode ? 'text-white' : 'text-slate-700'}`} />
                 </div>
                 <div>
-                  <p className="text-xs text-slate-400">Total</p>
-                  <p className="text-lg font-bold text-white">
+                  <p className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Total</p>
+                  <p className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                     ₹{invoices.reduce((sum, inv) => sum + inv.grand_total, 0).toLocaleString()}
                   </p>
                 </div>
@@ -1612,12 +1619,12 @@ export default function InvoicesPage() {
         {/* Compact Filters - All in one row */}
         <div className="mb-3 flex flex-col sm:flex-row gap-2">
           <div className="flex-1 relative min-w-0">
-            <MagnifyingGlass className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+            <MagnifyingGlass className={`absolute left-3 top-2.5 w-4 h-4 ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`} />
             <Input
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 h-9 bg-slate-800 border-slate-700 text-white text-sm placeholder-slate-400 w-full"
+              className={`pl-9 h-9 text-sm w-full ${darkMode ? 'bg-background border-border text-white placeholder-slate-400' : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400'}`}
             />
           </div>
           <ViewSelector
@@ -1628,7 +1635,7 @@ export default function InvoicesPage() {
             onClick={handleExportToExcel}
             variant="outline"
             size="sm"
-            className="h-9 px-2 bg-slate-800 border-slate-700 text-white hover:bg-slate-700 text-xs whitespace-nowrap"
+            className={`h-9 px-2 text-xs whitespace-nowrap ${darkMode ? 'bg-background border-border text-white hover:bg-card' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'}`}
             disabled={filteredInvoices.length === 0}
           >
             <Download className="w-3 h-3 sm:mr-1" />
@@ -1638,20 +1645,20 @@ export default function InvoicesPage() {
 
         {/* Invoices Views - Conditional Rendering */}
         {filteredInvoices.length === 0 ? (
-          <Card className="bg-slate-800 border-slate-700">
+          <Card className={`${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                <FileText className="w-6 h-6 text-white" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${darkMode ? 'bg-card' : 'bg-slate-100'}`}>
+                <FileText className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-slate-700'}`} />
               </div>
-              <h3 className="text-lg font-bold text-white mb-1">{t('invoice.noInvoices')}</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className={`text-lg font-bold mb-1 ${darkMode ? 'text-white' : 'text-slate-900'}`}>{t('invoice.noInvoices')}</h3>
+              <p className={`text-sm ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                 {searchTerm 
                   ? t('invoice.searchFilterHint', 'Try adjusting your search.')
                   : t('invoice.noInvoicesDesc')}
               </p>
               <Button 
                 onClick={() => router.push('/distributor/create-invoice')}
-                className="mt-3 bg-slate-700 hover:bg-slate-600 text-white text-xs h-8"
+                className={`mt-3 text-xs h-8 ${darkMode ? 'bg-card hover:bg-slate-600 text-white' : 'bg-card hover:bg-slate-600 text-white'}`}
                 size="sm"
               >
                 <Plus className="w-3 h-3 mr-1" />
@@ -1668,6 +1675,7 @@ export default function InvoicesPage() {
                 onDelete={handleDeleteInvoice}
                 onPayment={openPaymentModal}
                 getStatusColor={getStatusColor}
+                darkMode={darkMode}
               />
             )}
             {currentView === 'table' && (

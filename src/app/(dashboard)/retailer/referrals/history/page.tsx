@@ -414,7 +414,7 @@ export default function ReferralHistoryPage() {
                           </div>
                         </td>
                         <td className="p-4">
-                          <Badge className="bg-slate-700 text-slate-200 border-slate-600">
+                          <Badge className="bg-card text-slate-200 border-slate-600">
                             {referral.referred_type}
                           </Badge>
                         </td>

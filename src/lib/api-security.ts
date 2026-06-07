@@ -87,10 +87,10 @@ export async function verifyAuth(request: NextRequest, requiredRoles?: UserRole[
 }
 
 /**
- * Middleware to verify admin access (SUPER_ADMIN only)
+ * Middleware to verify admin access (Admin + Internal teams)
  */
 export async function verifyAdmin(request: NextRequest): Promise<AuthenticatedUser | NextResponse> {
-  return verifyAuth(request, ['SUPER_ADMIN'])
+  return verifyAuth(request, ['SUPER_ADMIN', 'ADMIN', 'SALES', 'SUPPORT'])
 }
 
 /**
@@ -100,8 +100,16 @@ export async function verifyRetailerOrAdmin(request: NextRequest): Promise<Authe
   return verifyAuth(request, ['RETAILER', 'SUPER_ADMIN', 'SUPPORT', 'DISTRIBUTOR'])
 }
 
+export async function verifyRetailer(request: NextRequest): Promise<AuthenticatedUser | NextResponse> {
+  return verifyAuth(request, ['RETAILER'])
+}
+
 export async function verifyDistributor(request: NextRequest): Promise<AuthenticatedUser | NextResponse> {
   return verifyAuth(request, ['DISTRIBUTOR', 'SUPER_ADMIN'])
+}
+
+export async function verifyDistributorOrAdmin(request: NextRequest): Promise<AuthenticatedUser | NextResponse> {
+  return verifyAuth(request, ['DISTRIBUTOR', 'SUPER_ADMIN', 'ADMIN'])
 }
 
 export async function verifyLogisticOrAdmin(request: NextRequest): Promise<AuthenticatedUser | NextResponse> {

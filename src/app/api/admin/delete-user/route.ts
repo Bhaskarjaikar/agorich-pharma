@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdmin } from '@/lib/api-security';
+import { verifyAuth } from '@/lib/api-security';
 
 /**
  * DELETE /api/admin/delete-user
@@ -37,8 +37,8 @@ function getProjectSlug(supabaseUrl: string | undefined) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Verify admin authentication
-    const authResult = await verifyAdmin(req)
+    // Verify SUPER_ADMIN authentication (destructive operation)
+    const authResult = await verifyAuth(req, ['SUPER_ADMIN'])
     if ('headers' in authResult) {
       return authResult
     }
@@ -128,4 +128,3 @@ export async function DELETE(req: NextRequest) {
     });
   }
 }
-

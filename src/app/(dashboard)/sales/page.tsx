@@ -168,29 +168,29 @@ export default function SalesDashboard() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <Heart className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-gray-900">{t('dashboard.sales.title')}</h1>
-                  <p className="text-sm text-gray-500">{t('dashboard.sales.welcome', 'Welcome back!')}</p>
+                  <h1 className="text-xl font-semibold text-foreground">{t('dashboard.sales.title')}</h1>
+                  <p className="text-sm text-muted-foreground">{t('dashboard.sales.welcome', 'Welcome back!')}</p>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="border-input text-muted-foreground hover:bg-muted">
                 <Calendar className="w-4 h-4 mr-2" />
                 {t('dashboard.sales.scheduleMeeting', 'Schedule Meeting')}
               </Button>
-              <Button className="trust-gradient text-white">
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 {t('dashboard.sales.addCustomer', 'Add Customer')}
               </Button>
@@ -207,24 +207,24 @@ export default function SalesDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {t('dashboard.sales.monthlyTarget', 'Monthly Target')}
                 </CardTitle>
-                <Target className="h-4 w-4 text-slate-600" />
+                <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-foreground">
                   {formatCurrency(salesData.monthlyActual)} / {formatCurrency(salesData.monthlyTarget)}
                 </div>
-                <div className="flex items-center text-xs text-green-600">
+                <div className="flex items-center text-xs text-green-600 dark:text-green-400">
                   <TrendUp className="h-3 w-3 mr-1" weight="bold" />
                   {formatPercentage(salesData.targetProgress)} {t('dashboard.sales.achieved', 'achieved')}
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                  <div 
-                    className="bg-slate-600 h-2 rounded-full" 
+                <div className="w-full bg-muted rounded-full h-2 mt-2">
+                  <div
+                    className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full"
                     style={{ width: `${salesData.targetProgress}%` }}
                   ></div>
                 </div>
@@ -237,15 +237,15 @@ export default function SalesDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {t('dashboard.admin.activeRetailers')}
                 </CardTitle>
-                <Users className="h-4 w-4 text-green-600" />
+                <Users className="h-4 w-4 text-green-600 dark:text-green-400" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-foreground">
                   {salesData.activeRetailers} / {salesData.totalRetailers}
                 </div>
                 <div className="flex items-center text-xs text-green-600">
@@ -261,18 +261,18 @@ export default function SalesDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {t('dashboard.sales.commissionEarned', 'Commission Earned')}
                 </CardTitle>
-                <CurrencyDollar className="h-4 w-4 text-slate-600" />
+                <CurrencyDollar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-foreground">
                   {formatCurrency(salesData.commissionEarned)}
                 </div>
-                <div className="flex items-center text-xs text-green-600">
+                <div className="flex items-center text-xs text-green-600 dark:text-green-400">
                   <TrendUp className="h-3 w-3 mr-1" weight="bold" />
                   +12.5% {t('dashboard.admin.fromLastPeriod', 'from last period')}
                 </div>
@@ -285,18 +285,18 @@ export default function SalesDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+            <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {t('dashboard.sales.pendingFollowUps', 'Pending Follow-ups')}
                 </CardTitle>
-                <Clock className="h-4 w-4 text-slate-600" />
+                <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-foreground">
                   {salesData.pendingFollowUps}
                 </div>
-                <div className="flex items-center text-xs text-orange-600">
+                <div className="flex items-center text-xs text-orange-600 dark:text-orange-400">
                   <WarningCircle className="h-3 w-3 mr-1" />
                   {t('dashboard.sales.requiresAttention', 'Requires attention')}
                 </div>
@@ -343,10 +343,10 @@ export default function SalesDashboard() {
               transition={{ delay: 0.5 }}
               className="lg:col-span-2"
             >
-              <Card className="border-0 shadow-lg">
+              <Card className="bg-card border-border shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Pulse className="w-5 h-5 mr-2 text-slate-600" />
+                    <Pulse className="w-5 h-5 mr-2 text-muted-foreground" />
                     {t('dashboard.sales.recentActivities', 'Recent Activities')}
                   </CardTitle>
                   <CardDescription>
@@ -361,28 +361,28 @@ export default function SalesDashboard() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.1 * index }}
-                        className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
+                        className="flex items-center space-x-4 p-4 bg-muted rounded-lg"
                       >
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          activity.type === 'call' ? 'bg-gray-100' :
-                          activity.type === 'meeting' ? 'bg-gray-100' :
-                          activity.type === 'order' ? 'bg-gray-100' :
-                          'bg-gray-100'
+                          activity.type === 'call' ? 'bg-muted' :
+                          activity.type === 'meeting' ? 'bg-muted' :
+                          activity.type === 'order' ? 'bg-muted' :
+                          'bg-muted'
                         }`}>
                           {activity.type === 'call' ? (
-                            <Phone className="w-5 h-5 text-slate-600" />
+                            <Phone className="w-5 h-5 text-muted-foreground" />
                           ) : activity.type === 'meeting' ? (
-                            <SquaresFour className="w-5 h-5 text-slate-600" />
+                            <SquaresFour className="w-5 h-5 text-muted-foreground" />
                           ) : activity.type === 'order' ? (
-                            <CheckCircle className="w-5 h-5 text-slate-600" />
+                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                           ) : (
-                            <Clock className="w-5 h-5 text-slate-600" />
+                            <Clock className="w-5 h-5 text-muted-foreground" />
                           )}
                         </div>
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-900">{activity.customer}</h4>
-                          <p className="text-sm text-gray-600">{activity.action}</p>
-                          <p className="text-xs text-gray-500">{activity.time}</p>
+                          <h4 className="font-semibold text-foreground">{activity.customer}</h4>
+                          <p className="text-sm text-muted-foreground">{activity.action}</p>
+                          <p className="text-xs text-muted-foreground">{activity.time}</p>
                         </div>
                         <Badge 
                           variant={activity.status === 'completed' ? 'default' : 'secondary'}
@@ -403,10 +403,10 @@ export default function SalesDashboard() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <Card className="border-0 shadow-lg">
+              <Card className="bg-card border-border shadow-lg">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Star className="w-5 h-5 mr-2 text-yellow-600" />
+                    <Star className="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-500" />
                     {t('dashboard.sales.topPerformers', 'Top Performers')}
                   </CardTitle>
                   <CardDescription>
@@ -416,23 +416,23 @@ export default function SalesDashboard() {
                 <CardContent>
                   <div className="space-y-4">
                     {topPerformers.map((performer, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold text-sm">
+                          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-primary-foreground font-semibold text-sm">
                               {performer.name.split(' ').map(n => n[0]).join('')}
                             </span>
                           </div>
                           <div>
-                            <h4 className="font-semibold text-gray-900 text-sm">{performer.name}</h4>
-                            <p className="text-xs text-gray-500">{performer.orders} {t('dashboard.admin.totalOrders')}</p>
+                            <h4 className="font-semibold text-foreground text-sm">{performer.name}</h4>
+                            <p className="text-xs text-muted-foreground">{performer.orders} {t('dashboard.admin.totalOrders')}</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
+                          <p className="text-sm font-semibold text-foreground">
                             {formatCurrency(performer.value)}
                           </p>
-                          <p className="text-xs text-green-600">
+                          <p className="text-xs text-green-600 dark:text-green-400">
                             +{formatPercentage(performer.growth)}
                           </p>
                         </div>
@@ -454,12 +454,12 @@ export default function SalesDashboard() {
             className="space-y-6"
           >
             {/* Search and Filters */}
-            <Card className="border-0 shadow-lg">
+            <Card className="bg-card border-border shadow-lg">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="flex-1">
                     <div className="relative">
-                      <MagnifyingGlass className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                      <MagnifyingGlass className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                       <Input
                         placeholder={t('dashboard.sales.searchCustomers', 'Search customers...')}
                         value={searchQuery}
@@ -492,18 +492,18 @@ export default function SalesDashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 * index }}
                 >
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <Card className="bg-card border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold">
+                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-primary-foreground font-semibold">
                               {customer.name.split(' ').map(n => n[0]).join('')}
                             </span>
                           </div>
                           <div>
-                            <h3 className="font-semibold text-gray-900">{customer.name}</h3>
-                            <p className="text-sm text-gray-600">{customer.business}</p>
+                            <h3 className="font-semibold text-foreground">{customer.name}</h3>
+                            <p className="text-sm text-muted-foreground">{customer.business}</p>
                           </div>
                         </div>
                         <Badge className={getStatusColor(customer.status)}>
@@ -513,39 +513,39 @@ export default function SalesDashboard() {
 
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{t('dashboard.sales.healthScore', 'Health Score')}</span>
+                          <span className="text-sm text-muted-foreground">{t('dashboard.sales.healthScore', 'Health Score')}</span>
                           <Badge className={getHealthScoreColor(customer.healthScore)}>
                             {customer.healthScore}/100
                           </Badge>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{t('dashboard.admin.totalOrders')}</span>
-                          <span className="font-semibold">{customer.totalOrders}</span>
+                          <span className="text-sm text-muted-foreground">{t('dashboard.admin.totalOrders')}</span>
+                          <span className="font-semibold text-foreground">{customer.totalOrders}</span>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{t('dashboard.sales.totalValue', 'Total Value')}</span>
-                          <span className="font-semibold">{formatCurrency(customer.totalValue)}</span>
+                          <span className="text-sm text-muted-foreground">{t('dashboard.sales.totalValue', 'Total Value')}</span>
+                          <span className="font-semibold text-foreground">{formatCurrency(customer.totalValue)}</span>
                         </div>
 
                         {customer.outstandingBalance > 0 && (
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">{t('dashboard.retailer.outstandingBalance')}</span>
-                            <span className="font-semibold text-red-600">
+                            <span className="text-sm text-muted-foreground">{t('dashboard.retailer.outstandingBalance')}</span>
+                            <span className="font-semibold text-red-600 dark:text-red-400">
                               {formatCurrency(customer.outstandingBalance)}
                             </span>
                           </div>
                         )}
 
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{t('dashboard.sales.lastContact', 'Last Contact')}</span>
-                          <span className="text-sm">{customer.lastContact}</span>
+                          <span className="text-sm text-muted-foreground">{t('dashboard.sales.lastContact', 'Last Contact')}</span>
+                          <span className="text-sm text-foreground">{customer.lastContact}</span>
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{t('dashboard.sales.nextFollowUp', 'Next Follow-up')}</span>
-                          <span className="text-sm">{customer.nextFollowUp}</span>
+                          <span className="text-sm text-muted-foreground">{t('dashboard.sales.nextFollowUp', 'Next Follow-up')}</span>
+                          <span className="text-sm text-foreground">{customer.nextFollowUp}</span>
                         </div>
                       </div>
 
@@ -577,10 +577,10 @@ export default function SalesDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="border-0 shadow-lg">
+            <Card className="bg-card border-border shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <MapPin className="w-5 h-5 mr-2 text-green-600" />
+                  <MapPin className="w-5 h-5 mr-2 text-green-600 dark:text-green-500" />
                   {t('dashboard.sales.territoryMap', 'Territory Map')}
                 </CardTitle>
                 <CardDescription>
@@ -588,14 +588,14 @@ export default function SalesDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                <div className="h-96 bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center">
-                    <MapPin className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('dashboard.sales.interactiveMap', 'Interactive Territory Map')}</h3>
-                    <p className="text-gray-600 mb-4">
+                    <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{t('dashboard.sales.interactiveMap', 'Interactive Territory Map')}</h3>
+                    <p className="text-muted-foreground mb-4">
                       {t('dashboard.sales.mapDescription', 'View your customers on the map, plan routes, and track visits')}
                     </p>
-                    <Button className="trust-gradient text-white">
+                    <Button className="trust-gradient text-primary-foreground">
                       {t('dashboard.sales.openFullMap', 'Open Full Map')}
                     </Button>
                   </div>

@@ -4,12 +4,26 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 // Validate environment variables and fail fast if missing
-if (!supabaseUrl || supabaseUrl === 'https://your-project-id.supabase.co') {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL is not configured. Set it in .env.local')
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured. ' +
+    'Set them in .env.local at the project root (d:\\agorich-pharma-main\\.env.local). ' +
+    'Current values: URL=' + (supabaseUrl || 'UNDEFINED') + ', Key=' + (supabaseAnonKey ? 'PRESENT' : 'UNDEFINED')
+  )
 }
 
-if (!supabaseAnonKey || supabaseAnonKey === 'your-anon-key-here') {
-  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured. Set it in .env.local')
+if (supabaseUrl === 'https://your-project-id.supabase.co' || supabaseUrl?.includes('test-project')) {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_URL appears to be a placeholder value: ' + supabaseUrl + '. ' +
+    'Please set the correct Supabase URL in .env.local at the project root.'
+  )
+}
+
+if (supabaseAnonKey === 'your-anon-key-here') {
+  throw new Error(
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY appears to be a placeholder value. ' +
+    'Please set the correct Supabase anon key in .env.local at the project root.'
+  )
 }
 
 // Get cookie domain for cross-subdomain consistency
@@ -120,6 +134,9 @@ export interface Profile {
   is_verified: boolean
   created_at: string
   updated_at: string
+  drug_license_20b: string | null
+  drug_license_21b: string | null
+  email: string | null
 }
 
 export interface Product {

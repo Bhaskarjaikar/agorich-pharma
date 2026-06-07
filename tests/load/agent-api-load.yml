@@ -1,0 +1,99 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 60
+      arrivalRate: 50
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load"
+    - duration: 30
+      arrivalRate: 50
+      name: "Cool down"
+  plugins:
+    expect:
+      keepAlive: true
+      timeout: 30000
+  processor: "./load-processor.js"
+  variables:
+    baseUrl: "http://localhost:3000"
+
+scenarios:
+  - name: "Health Check API"
+    weight: 10
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/health"
+      expect:
+        statusCode: 200
+
+  - name: "Agent Status API"
+    weight: 10
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/admin/emergency/status"
+      expect:
+        statusCode: 200
+
+  - name: "Spending Usage API"
+    weight: 10
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/admin/spending/usage"
+      expect:
+        statusCode: 200
+
+  - name: "Spending Limits API"
+    weight: 10
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/admin/spending/limits"
+      expect:
+        statusCode: 200
+
+  - name: "AR Overdue API"
+    weight: 15
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/agent-connect/ar-overdue"
+      headers:
+        x-agent-api-key: "{{ $processEnvironment.AGENT_API_KEY }}"
+      expect:
+        statusCode: 200
+
+  - name: "Inventory Alerts API"
+    weight: 15
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/agent-connect/inventory-alerts"
+      headers:
+        x-agent-api-key: "{{ $processEnvironment.AGENT_API_KEY }}"
+      expect:
+        statusCode: 200
+
+  - name: "Approval Queue API"
+    weight: 15
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/approvals/queue?status=pending"
+      expect:
+        statusCode: 200
+
+  - name: "Products API"
+    weight: 15
+    request:
+      method: "GET"
+      url: "{{ baseUrl }}/api/products"
+      expect:
+        statusCode: 200
+
+after:
+  flow:
+    - name: "Generate Load Test Report"
+      loop:
+        - log: "Load test completed. Summary:"
+        - log: "Target: {{ baseUrl }}"
+        - log: "Total requests: {{ __artillery.loopCount }}"

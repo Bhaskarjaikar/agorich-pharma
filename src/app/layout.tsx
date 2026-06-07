@@ -9,6 +9,8 @@ import LanguageWelcomeModal from "@/components/LanguageWelcomeModal";
 import FCMInitializer from "@/components/FCMInitializer";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import { AuthErrorBoundary } from "@/components/auth/AuthErrorBoundary";
+import { DeepLinkHandler } from "@/components/mobile/DeepLinkHandler";
+import { NativeAppChrome } from "@/components/mobile/NativeAppChrome";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -60,6 +62,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body
         className={`${inter.variable} ${poppins.variable} font-sans antialiased`}
@@ -70,6 +73,8 @@ export default function RootLayout({
               <AuthErrorBoundary>
                 <LanguageWelcomeModal />
                 <FCMInitializer />
+                <NativeAppChrome />
+                <DeepLinkHandler />
                 {children}
                 <Toaster />
               </AuthErrorBoundary>

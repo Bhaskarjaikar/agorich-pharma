@@ -70,20 +70,20 @@ interface ARPanelProps {
 
 function getRiskColor(risk: string): string {
   switch (risk) {
-    case 'CRITICAL': return 'text-red-500 bg-red-500/10'
-    case 'HIGH': return 'text-orange-500 bg-orange-500/10'
-    case 'MEDIUM': return 'text-yellow-500 bg-yellow-500/10'
-    default: return 'text-green-500 bg-green-500/10'
+    case 'CRITICAL': return 'text-red-500 dark:text-red-400 bg-red-500/10 dark:bg-red-500/20'
+    case 'HIGH': return 'text-orange-500 dark:text-orange-400 bg-orange-500/10 dark:bg-orange-500/20'
+    case 'MEDIUM': return 'text-yellow-500 dark:text-yellow-400 bg-yellow-500/10 dark:bg-yellow-500/20'
+    default: return 'text-green-500 dark:text-green-400 bg-green-500/10 dark:bg-green-500/20'
   }
 }
 
 function getBucketColor(bucket: string): string {
   switch (bucket) {
-    case 'RED_ZONE': return 'bg-red-600'
-    case '90_DAYS': return 'bg-orange-500'
-    case '60_DAYS': return 'bg-yellow-500'
-    case '30_DAYS': return 'bg-blue-500'
-    default: return 'bg-green-500'
+    case 'RED_ZONE': return 'bg-red-600 dark:bg-red-500'
+    case '90_DAYS': return 'bg-orange-500 dark:bg-orange-400'
+    case '60_DAYS': return 'bg-yellow-500 dark:bg-yellow-400'
+    case '30_DAYS': return 'bg-blue-500 dark:bg-blue-400'
+    default: return 'bg-green-500 dark:bg-green-400'
   }
 }
 
@@ -135,7 +135,7 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
   const redZonePercent = summary?.totalOutstanding ? (redZoneAmount / summary.totalOutstanding) * 100 : 0
 
   return (
-    <Card className={`border shadow-sm ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+    <Card className={`border shadow-sm ${darkMode ? 'bg-background border-border' : 'bg-white border-slate-200'}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -164,32 +164,32 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
         {loading && !summary ? (
           <div className="space-y-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className={`h-16 rounded animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-slate-100'}`} />
+              <div key={i} className={`h-16 rounded animate-pulse ${darkMode ? 'bg-card' : 'bg-slate-100'}`} />
             ))}
           </div>
         ) : (
           <>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Total AR</div>
+              <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Total AR</div>
                 <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {summary ? formatCurrency(summary.totalOutstanding) : '—'}
                 </div>
               </div>
-              <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Avg DSO</div>
+              <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Avg DSO</div>
                 <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {summary?.avgDaysOverdue || 0} days
                 </div>
               </div>
-              <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Overdue</div>
+              <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Overdue</div>
                 <div className={`text-lg font-bold ${summary?.overdueCount && summary.overdueCount > 0 ? 'text-orange-500' : darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {summary?.overdueCount || 0}
                 </div>
               </div>
-              <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
-                <div className={`text-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Oldest</div>
+              <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
+                <div className={`text-xs ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>Oldest</div>
                 <div className={`text-lg font-bold ${(summary?.oldestInvoiceAge || 0) > 60 ? 'text-red-500' : darkMode ? 'text-white' : 'text-slate-900'}`}>
                   {summary?.oldestInvoiceAge || 0} days
                 </div>
@@ -217,7 +217,7 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className={`text-xs font-semibold ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                   AGING BUCKETS
                 </span>
               </div>
@@ -243,10 +243,10 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
                         className="h-2"
                       />
                       <div className="flex items-center justify-between mt-1">
-                        <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           {bucket.invoice_count} invoices
                         </span>
-                        <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                           {bucket.percentage_of_total.toFixed(1)}%
                         </span>
                       </div>
@@ -256,9 +256,9 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
               </div>
             </div>
 
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-slate-700/50' : 'bg-slate-50'}`}>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-card/50' : 'bg-slate-50'}`}>
               <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs font-semibold ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                <span className={`text-xs font-semibold ${darkMode ? 'text-muted-foreground' : 'text-slate-500'}`}>
                   TOP SLOW PAYERS
                 </span>
               </div>
@@ -266,7 +266,7 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
                 {customerDSO.slice(0, 5).map((cust, idx) => (
                   <div key={cust.customer_id} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>#{idx + 1}</span>
+                      <span className={`text-xs ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>#{idx + 1}</span>
                       <span className={`text-sm ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
                         {cust.customer_name}
                       </span>
@@ -286,7 +286,7 @@ export function ARAgingPanel({ darkMode = true }: ARPanelProps) {
                   </div>
                 ))}
                 {customerDSO.length === 0 && (
-                  <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <div className={`text-sm ${darkMode ? 'text-slate-500' : 'text-muted-foreground'}`}>
                     No slow payers detected
                   </div>
                 )}

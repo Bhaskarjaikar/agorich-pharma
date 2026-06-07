@@ -45,27 +45,7 @@ export default function SettingsPage() {
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [profileFile, setProfileFile] = useState<File | null>(null)
-  
-  // Dark mode state - synced with homepage via localStorage
-  const [darkMode, setDarkMode] = useState(true)
-  
-  useEffect(() => {
-    const saved = localStorage.getItem('agorich-dark-mode')
-    if (saved !== null) {
-      setDarkMode(saved === 'true')
-    }
-  }, [])
-  
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'agorich-dark-mode') {
-        setDarkMode(e.newValue === 'true')
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
-  
+
   const [profileData, setProfileData] = useState({
     userName: '',
     phone: '',
@@ -294,43 +274,43 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className={darkMode ? 'text-slate-300' : 'text-slate-600'}>{t('common.loading')}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t('common.loading')}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className={`min-h-screen relative overflow-hidden ${darkMode ? 'bg-slate-900' : 'bg-slate-50'}`}>
+    <div className="min-h-screen bg-background text-foreground">
       {/* Subtle background gradient */}
-      <div className={`absolute inset-0 pointer-events-none ${darkMode ? 'bg-gradient-to-br from-slate-900 via-slate-800/50 to-slate-900' : 'bg-gradient-to-br from-slate-50 via-white to-slate-50'}`} />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-background via-background/80 to-background" />
 
       {/* Header */}
-      <header className={`border-b backdrop-blur-md sticky top-0 z-50 ${darkMode ? 'border-slate-700/50 bg-slate-800/50' : 'border-slate-200 bg-white/80'}`}>
+      <header className="border-b backdrop-blur-md sticky top-0 z-50 bg-card/90 backdrop-blur-xl supports-[backdrop-filter]:bg-card/75">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14 md:h-16">
             <div className="flex items-center space-x-3 md:space-x-4">
-              <Link href="/distributor" className={`flex items-center transition-colors text-sm md:text-base ${darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'}`}>
+              <Link href="/distributor" className="flex items-center transition-colors text-sm md:text-base text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="w-4 h-4 md:w-5 md:h-5 mr-1 md:mr-2" weight="thin" />
                 <span className="md:hidden">Back</span>
                 <span className="hidden md:inline">{t('settings.backToDashboard')}</span>
               </Link>
-              <div className="hidden md:block w-px h-6 bg-slate-700" />
+              <div className="hidden md:block w-px h-6 bg-border" />
               <div className="flex items-center space-x-2 md:space-x-3">
                 <div className="icon-squirclexs md:icon-squircle">
-                  <User className="w-4 h-4 md:w-5 md:h-5 text-emerald-400" weight="thin" />
+                  <User className="w-4 h-4 md:w-5 md:h-5 text-primary" weight="thin" />
                 </div>
                 <div>
-                  <h1 className={`text-base md:text-lg font-semibold ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>{t('settings.profileSettings')}</h1>
-                  <p className={`hidden md:block text-sm ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>{t('settings.manageAccount')}</p>
+                  <h1 className="text-base md:text-lg font-semibold text-foreground">{t('settings.profileSettings')}</h1>
+                  <p className="hidden md:block text-sm text-muted-foreground">{t('settings.manageAccount')}</p>
                 </div>
               </div>
             </div>
             
-            <Badge className="hidden md:flex bg-emerald-500/10 text-emerald-400 border-emerald-500/30">
+            <Badge className="hidden md:flex bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
               <CheckCircle className="w-4 h-4 mr-1" weight="thin" />
               {t('settings.profileComplete')}
             </Badge>
@@ -367,14 +347,14 @@ export default function SettingsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="glass-card hover-lift">
-                <div className="flex items-center gap-3 p-3 border-b border-slate-700/50">
+              <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-3 p-3 border-b border-border">
                   <div className="icon-squircle">
-                    <User className="w-4 h-4 text-emerald-400" weight="thin" />
+                    <User className="w-4 h-4 text-primary" weight="thin" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{t('settings.personalInformation')}</h3>
-                    <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-600'}`}>{t('settings.updatePersonalDetails')}</p>
+                    <h3 className="text-sm font-medium text-foreground">{t('settings.personalInformation')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('settings.updatePersonalDetails')}</p>
                   </div>
                 </div>
                 <div className="space-y-2 p-4">
@@ -388,7 +368,7 @@ export default function SettingsPage() {
                             alt="Profile Photo"
                             width={64}
                             height={64}
-                            className={`w-16 h-16 rounded-full object-cover border-2 ${darkMode ? 'border-slate-600' : 'border-slate-300'}`}
+                            className="w-16 h-16 rounded-full object-cover border-2 border-border"
                           />
                           <button
                             onClick={handleRemovePhoto}
@@ -398,14 +378,14 @@ export default function SettingsPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className={`w-16 h-16 rounded-full flex items-center justify-center ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                          <User className={`w-8 h-8 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`} weight="thin" />
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center bg-muted">
+                          <User className="w-8 h-8 text-muted-foreground" weight="thin" />
                         </div>
                       )}
                     </div>
                     
                     <div className="flex-1">
-                      <label className={`block text-sm font-medium mb-1 ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                      <label className="block text-sm font-medium mb-1 text-foreground">
                         {t('settings.profilePhoto')}
                       </label>
                       <div className="flex items-center space-x-2">
@@ -418,11 +398,11 @@ export default function SettingsPage() {
                         />
                         <label
                           htmlFor="photo-upload"
-                          className={`btn-premium flex items-center px-3 py-1.5 rounded-lg transition-colors cursor-pointer text-sm border ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600 hover:text-white' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+                          className="btn-premium flex items-center px-3 py-1.5 rounded-lg transition-colors cursor-pointer text-sm border border-input bg-background hover:bg-muted text-foreground"
                         >
                           {isUploadingPhoto ? (
                             <div className="flex items-center">
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-slate-300 mr-2"></div>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-current mr-2"></div>
                               {t('settings.uploading')}
                             </div>
                           ) : (
@@ -437,32 +417,32 @@ export default function SettingsPage() {
                             onClick={handleRemovePhoto}
                             variant="outline"
                             size="sm"
-                            className={`btn-premium h-8 px-2 ${darkMode ? 'border-slate-600 text-slate-400 hover:text-rose-400 hover:border-rose-500/50' : 'border-slate-300 text-slate-600 hover:text-rose-500'}`}
+                            className="h-8 px-2 border-input text-muted-foreground hover:text-rose-500 hover:border-rose-500/50"
                           >
                             <X className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
-                      <p className={`text-xs mt-1 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                      <p className="text-xs mt-1 text-muted-foreground">
                         {t('settings.photoFormatHint')}
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.fullName')}
                     </label>
                     <Input
                       value={profileData.userName}
                       onChange={(e) => setProfileData({...profileData, userName: e.target.value})}
                       placeholder={t('settings.enterFullName')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.phoneNumber')}
                     </label>
                     <Input
@@ -474,21 +454,21 @@ export default function SettingsPage() {
                       }}
                       placeholder={t('settings.enterPhoneNumber')}
                       maxLength={10}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-start gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium md:pt-2 truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium md:pt-2 truncate text-foreground">
                       {t('settings.email')}
                     </label>
                     <div>
                       <Input
                         value={localStorage.getItem('email') || ''}
                         disabled
-                        className={`h-8 md:h-9 text-xs md:text-sm ${darkMode ? 'bg-slate-800/30 border-slate-700/50 text-slate-500' : 'bg-slate-100 border-slate-200 text-slate-500'}`}
+                        className="h-8 md:h-9 text-xs md:text-sm bg-muted"
                       />
-                      <p className={`text-[10px] md:text-xs mt-0.5 ${darkMode ? 'text-slate-500' : 'text-slate-500'}`}>
+                      <p className="text-[10px] md:text-xs mt-0.5 text-muted-foreground">
                         {t('settings.emailCannotChange')}
                       </p>
                     </div>
@@ -504,41 +484,41 @@ export default function SettingsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <div className="glass-card hover-lift">
-                <div className={`flex items-center gap-3 p-3 border-b ${darkMode ? 'border-slate-700/50' : 'border-slate-200'}`}>
+              <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-3 p-3 border-b border-border">
                   <div className="icon-squircle">
-                    <Building className="w-4 h-4 text-emerald-400" weight="thin" />
+                    <Building className="w-4 h-4 text-primary" weight="thin" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{t('settings.businessInformation')}</h3>
-                    <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-600'}`}>{t('settings.updateBusinessDetails')}</p>
+                    <h3 className="text-sm font-medium text-foreground">{t('settings.businessInformation')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('settings.updateBusinessDetails')}</p>
                   </div>
                 </div>
                 <div className="space-y-2 p-4">
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.businessName')}
                     </label>
                     <Input
                       value={profileData.businessName}
                       onChange={(e) => setProfileData({...profileData, businessName: e.target.value})}
                       placeholder={t('settings.enterBusinessName')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.businessType')}
                     </label>
                     <Select 
                       value={profileData.businessType} 
                       onValueChange={(value) => setProfileData({...profileData, businessType: value})}
                     >
-                      <SelectTrigger className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200' : 'bg-white border-slate-300 text-slate-900'}`}>
+                      <SelectTrigger className="h-8 md:h-9 text-xs md:text-sm">
                         <SelectValue placeholder={t('settings.selectBusinessType')} />
                       </SelectTrigger>
-                      <SelectContent className={`${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                      <SelectContent>
                         <SelectItem value="Pharmacy">Pharmacy</SelectItem>
                         <SelectItem value="Medical Store">Medical Store</SelectItem>
                         <SelectItem value="Hospital">Hospital</SelectItem>
@@ -557,31 +537,30 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.gstNumberOptional')}
                     </label>
                     <Input
                       value={profileData.gstNumber}
                       onChange={(e) => setProfileData({...profileData, gstNumber: e.target.value})}
                       placeholder={t('settings.enterGstNumber')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.fssaiLicenseOptional')}
                     </label>
                     <Input
                       value={profileData.fssaiLicense}
                       onChange={(e) => setProfileData({...profileData, fssaiLicense: e.target.value})}
                       placeholder={t('settings.enterFssaiLicense')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
               </div>
             </div>
-
             </motion.div>
 
             {/* Address Information */}
@@ -590,62 +569,62 @@ export default function SettingsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <div className="glass-card hover-lift">
-                <div className="flex items-center gap-3 p-3 border-b border-slate-700/50">
+              <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-3 p-3 border-b border-border">
                   <div className="icon-squircle">
-                    <MapPin className="w-4 h-4 text-emerald-400" weight="thin" />
+                    <MapPin className="w-4 h-4 text-primary" weight="thin" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{t('settings.addressInformation')}</h3>
-                    <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-600'}`}>{t('settings.updateAddressDetails')}</p>
+                    <h3 className="text-sm font-medium text-foreground">{t('settings.addressInformation')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('settings.updateAddressDetails')}</p>
                   </div>
                 </div>
                 <div className="space-y-2 p-4">
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-start gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium md:pt-2 truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium md:pt-2 truncate text-foreground">
                       {t('settings.completeAddress')}
                     </label>
                     <Textarea
                       value={profileData.address}
                       onChange={(e) => setProfileData({...profileData, address: e.target.value})}
                       placeholder={t('settings.enterBusinessAddress')}
-                      className={`min-h-[50px] md:min-h-[60px] text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="min-h-[50px] md:min-h-[60px] text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.state')}
                     </label>
                     <Input
                       value={profileData.state}
                       onChange={(e) => setProfileData({...profileData, state: e.target.value})}
                       placeholder={t('settings.state')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.city')}
                     </label>
                     <Input
                       value={profileData.city}
                       onChange={(e) => setProfileData({...profileData, city: e.target.value})}
                       placeholder={t('settings.city')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.pincode')}
                     </label>
                     <Input
                       value={profileData.pincode}
                       onChange={(e) => setProfileData({...profileData, pincode: e.target.value})}
                       placeholder={t('settings.pincode')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                       maxLength={6}
                     />
                   </div>
@@ -660,31 +639,31 @@ export default function SettingsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <div className="glass-card hover-lift">
-                <div className="flex items-center gap-3 p-3 border-b border-slate-700/50">
+              <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                <div className="flex items-center gap-3 p-3 border-b border-border">
                   <div className="icon-squircle">
-                    <Shield className="w-4 h-4 text-emerald-400" weight="thin" />
+                    <Shield className="w-4 h-4 text-primary" weight="thin" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-medium ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>{t('settings.bankingInformation')}</h3>
-                    <p className={`text-xs ${darkMode ? 'text-slate-500' : 'text-slate-600'}`}>{t('settings.updateBankingDetails')}</p>
+                    <h3 className="text-sm font-medium text-foreground">{t('settings.bankingInformation')}</h3>
+                    <p className="text-xs text-muted-foreground">{t('settings.updateBankingDetails')}</p>
                   </div>
                 </div>
                 <div className="space-y-2 p-4">
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.bankName')}
                     </label>
                     <Input
                       value={profileData.bankName}
                       onChange={(e) => setProfileData({...profileData, bankName: e.target.value})}
                       placeholder={t('settings.enterBankName')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                     />
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.accountNumber')}
                     </label>
                     <div className="relative">
@@ -693,12 +672,12 @@ export default function SettingsPage() {
                         value={profileData.bankAccountNumber}
                         onChange={(e) => setProfileData({...profileData, bankAccountNumber: e.target.value})}
                         placeholder={t('settings.enterAccountNumber')}
-                        className={`h-8 md:h-9 pr-10 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                        className="h-8 md:h-9 pr-10 text-xs md:text-sm"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className={`absolute right-2 top-1 md:top-1.5 w-6 h-6 ${darkMode ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                        className="absolute right-2 top-1 md:top-1.5 w-6 h-6 text-muted-foreground hover:text-foreground transition-colors"
                       >
                         {showPassword ? <EyeSlash className="w-4 h-4" weight="thin" /> : <Eye className="w-4 h-4" weight="thin" />}
                       </button>
@@ -706,14 +685,14 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="grid grid-cols-[100px_1fr] md:grid-cols-[140px_1fr] items-center gap-2 md:gap-3 py-1">
-                    <label className={`text-xs md:text-sm font-medium truncate ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                    <label className="text-xs md:text-sm font-medium truncate text-foreground">
                       {t('settings.ifscCode')}
                     </label>
                     <Input
                       value={profileData.bankIfscCode}
                       onChange={(e) => setProfileData({...profileData, bankIfscCode: e.target.value.toUpperCase()})}
                       placeholder={t('settings.enterIfscCode')}
-                      className={`h-8 md:h-9 text-xs md:text-sm focus:border-emerald-500/50 focus:ring-emerald-500/20 ${darkMode ? 'bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-600' : 'bg-white border-slate-300 text-slate-900 placeholder:text-slate-400'}`}
+                      className="h-8 md:h-9 text-xs md:text-sm"
                       maxLength={11}
                     />
                   </div>
@@ -730,15 +709,15 @@ export default function SettingsPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <div className="glass-card p-3">
+              <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm p-3">
                 <Button 
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="w-full h-10 btn-premium bg-emerald-600 hover:bg-emerald-500 text-white"
+                  className="w-full h-10 btn-premium bg-emerald-600 hover:bg-emerald-500 text-primary-foreground"
                 >
                   {isSaving ? (
                     <div className="flex items-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
                       {t('settings.saving')}
                     </div>
                   ) : (
@@ -758,7 +737,7 @@ export default function SettingsPage() {
               transition={{ delay: 0.6 }}
               className="mt-3"
             >
-              <div className="glass-card p-3">
+              <div className="rounded-2xl border border-border bg-card text-card-foreground shadow-sm p-3">
                 <Button 
                   onClick={async () => {
                     try {
@@ -768,7 +747,7 @@ export default function SettingsPage() {
                       window.location.href = '/login'
                     }
                   }}
-                  className="w-full h-10 btn-premium border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  className="w-full h-10 border border-destructive/30 text-destructive hover:bg-destructive/10"
                   variant="outline"
                 >
                   <SignOut className="w-4 h-4 mr-2" weight="bold" />

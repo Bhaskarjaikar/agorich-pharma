@@ -282,7 +282,7 @@ export default function LeaderboardPage() {
                                   <span className="ml-2 text-2xl">{getRankBadge(entry.rank)}</span>
                                 )}
                               </h3>
-                              <Badge className="bg-slate-700 text-slate-200 border-slate-600">
+                              <Badge className="bg-card text-slate-200 border-slate-600">
                                 {entry.business_type}
                               </Badge>
                             </div>
@@ -349,7 +349,7 @@ export default function LeaderboardPage() {
                 Share your referral code with more people and start earning amazing rewards!
               </p>
               <Link href="/retailer/referrals">
-                <Button className="bg-slate-700 hover:bg-slate-600 text-white">
+                <Button className="bg-card hover:bg-slate-600 text-white">
                   Start Referring Now
                 </Button>
               </Link>

@@ -39,12 +39,11 @@ export async function POST(request: NextRequest) {
     let supabase
     if (supabaseServiceKey && supabaseUrl) {
       supabase = createClient(supabaseUrl, supabaseServiceKey, {
-        auth: { 
-          autoRefreshToken: false, 
-          persistSession: false 
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
         }
       })
-      console.log('✅ Pack order API: Using service role client (RLS bypassed)')
     } else {
       const { createServerClient } = await import('@/lib/supabase/server')
       supabase = await createServerClient()

@@ -10,6 +10,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase-client'
 import { useSupabaseAuth } from '@/hooks/useSupabaseAuth'
+import { isNativeApp } from '@/lib/capacitor'
+import { Browser } from '@capacitor/browser'
 
 const SUPER_ADMIN_ID = '723421ed-f226-41f0-bb09-3feb55e3e293'
 
@@ -104,18 +106,26 @@ export default function SignupPage() {
         return `${loc.protocol}//${hostname}${port}/auth/callback`
       })()
       
-      const { error } = await supabase.auth.signInWithOAuth({
+      const native = isNativeApp()
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: baseCallback,
+          redirectTo: native ? 'agorich://auth/callback' : baseCallback,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           },
+          ...(native ? { skipBrowserRedirect: true } : {}),
         },
       })
 
       if (error) throw error
+
+      if (native) {
+        const url = data?.url
+        if (!url) throw new Error('Missing OAuth URL')
+        await Browser.open({ url })
+      }
     } catch (err: unknown) {
       const message = err instanceof Error && err.message ? err.message : 'Google sign up failed. Please try again.'
       // Don't show error if user cancelled or closed popup
@@ -267,10 +277,10 @@ export default function SignupPage() {
           {/* Divider */}
           <div className="relative my-4">
             <div className="absolute inset-0 flex items-center text-slate-500">
-              <div className="w-full border-t border-slate-700"></div>
+              <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-slate-900/90 text-slate-400">OR</span>
+              <span className="px-2 bg-slate-900/90 text-muted-foreground">OR</span>
             </div>
           </div>
 
@@ -279,7 +289,7 @@ export default function SignupPage() {
             type="button"
             onClick={handleGoogleSignUp}
             disabled={isGoogleLoading}
-            className="w-full flex items-center justify-center gap-3 h-12 rounded-xl border-2 font-medium transition-all duration-200 bg-white text-slate-900 border-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 h-12 rounded-xl border-2 font-medium transition-all duration-200 bg-white text-slate-900 border-border hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGoogleLoading ? (
               <>
@@ -296,7 +306,7 @@ export default function SignupPage() {
 
           {/* Login Link */}
           <div className="text-center text-sm mt-4">
-            <span className="text-slate-400">Already have an account? </span>
+            <span className="text-muted-foreground">Already have an account? </span>
             <Link href={`/login?redirect=${encodeURIComponent(redirectTarget)}`} className="text-blue-400 hover:text-blue-300 hover:underline">
               Sign in
             </Link>

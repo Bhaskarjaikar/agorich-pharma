@@ -1,197 +1,128 @@
 'use client'
 
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import Image from 'next/image'
+import { Button } from '@/components/ui/button'
+import {
+  Pencil,
+  WifiSlash,
+  ArrowClockwise,
+  FloppyDisk
+} from '@phosphor-icons/react'
+import { formatCurrency } from '@/lib/invoice/types'
 
 interface InvoiceHeaderProps {
-  invoiceNumber: string
-  invoiceDate: string
-  dueDate: string
+  // Edit mode props
+  isEditMode?: boolean
+  cartItems?: any[]
+  getGrandTotal?: () => number
+  isSaving?: boolean
+  onSave?: () => void
+  syncQueue?: any[]
+  offlineCart?: { isOnline: boolean } | null
+  darkMode?: boolean
+  // Display mode props
+  invoiceNumber?: string
+  invoiceDate?: string
+  dueDate?: string
   orderNumber?: string
   orderDate?: string
   deliveryDate?: string
   paymentTerms?: string
-  companyData: {
+  companyData?: {
     name: string
-    address1: string
-    address2: string
-    city: string
-    state: string
-    pincode: string
-    gstin: string
-    phone: string
-    email: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    pincode?: string
+    gstin?: string
+    phone?: string
+    email?: string
     website?: string
   }
-  customerData: {
-    name: string
-    businessName: string
-    address1: string
-    address2: string
-    city: string
-    state: string
-    pincode: string
+  customerData?: {
+    name?: string
+    businessName?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    pincode?: string
     gstin?: string
-    phone: string
+    phone?: string
   }
   shipToData?: {
-    name: string
-    businessName: string
-    address1: string
-    address2: string
-    city: string
-    state: string
-    pincode: string
+    name?: string
+    businessName?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    pincode?: string
   }
 }
 
-export default function InvoiceHeader({
-  invoiceNumber,
-  invoiceDate,
-  dueDate,
-  orderNumber,
-  orderDate,
-  deliveryDate,
-  paymentTerms = "NET 30 DAYS",
-  companyData,
-  customerData,
-  shipToData
-}: InvoiceHeaderProps) {
+export function InvoiceHeader(props: InvoiceHeaderProps) {
+  const {
+    isEditMode = false,
+    cartItems = [],
+    getGrandTotal = () => 0,
+    isSaving = false,
+    onSave = () => {},
+    syncQueue = [],
+    offlineCart,
+    darkMode = false,
+    invoiceNumber,
+    invoiceDate,
+    dueDate,
+    orderNumber,
+    orderDate,
+    deliveryDate,
+    paymentTerms,
+    companyData,
+    customerData,
+    shipToData
+  } = props
   return (
-    <div className="w-full">
-      {/* Main Header Section */}
-      <div className="border-2 border-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 p-6 mb-6 shadow-lg">
-        <div className="flex justify-between items-start">
-          {/* Company Details - Left Side */}
-          <div className="flex-1">
-            <div className="flex items-center mb-4">
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-4 shadow-md">
-                <Image 
-                  src="/agorich-logo.png" 
-                  alt="Agorich Logo" 
-                  width={56} 
-                  height={56}
-                  className="w-14 h-14 rounded-lg object-cover"
-                />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">{companyData.name}</h1>
-                <p className="text-base text-blue-700 font-medium">Pharmaceutical Wholesale Distribution</p>
-              </div>
-            </div>
-            
-            <div className="text-sm text-gray-800 space-y-1 bg-white/70 p-3 rounded-lg">
-              <p><strong className="text-gray-900">Reg. No:</strong> <span className="text-gray-700">{companyData.address1}</span></p>
-              <p className="text-gray-700">{companyData.address2}</p>
-              <p className="text-gray-700">{companyData.city}, {companyData.state} - {companyData.pincode}</p>
-              <p><strong className="text-gray-900">GSTIN:</strong> <span className="text-blue-700 font-mono">{companyData.gstin}</span></p>
-              <p><strong className="text-gray-900">Phone:</strong> <span className="text-gray-700">{companyData.phone}</span></p>
-              <p><strong className="text-gray-900">Email:</strong> <span className="text-blue-600">{companyData.email}</span></p>
-              {companyData.website && <p><strong className="text-gray-900">Website:</strong> <span className="text-blue-600">{companyData.website}</span></p>}
-            </div>
+    <div className="border-b p-3 md:p-4 bg-card">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+        <div className="flex items-center flex-wrap gap-2 md:gap-4">
+          {isEditMode ? (
+            <Badge className="bg-orange-500/20 text-orange-500 border-orange-400/30 text-xs">
+              <Pencil className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              Edit Mode
+            </Badge>
+          ) : null}
+        </div>
+
+        <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4">
+          {offlineCart && !offlineCart.isOnline && (
+            <Badge className="bg-orange-500/20 text-orange-500 border-orange-400/30 text-xs">
+              <WifiSlash className="w-3 h-3 md:w-4 md:h-4 mr-1" />
+              Offline Mode
+            </Badge>
+          )}
+          {syncQueue.length > 0 && (
+            <Badge className="bg-blue-500/20 text-blue-500 border-blue-400/30 text-xs">
+              <ArrowClockwise className="w-3 h-3 md:w-4 md:h-4 mr-1 animate-spin" />
+              {syncQueue.length} pending sync
+            </Badge>
+          )}
+          <div className="text-xs md:text-sm text-foreground">
+            <span className="text-muted-foreground">Items:</span> {cartItems.length} |
+            <span className="ml-1 md:ml-2 text-muted-foreground">Total:</span> {formatCurrency(getGrandTotal())}
           </div>
 
-          {/* Invoice Details - Right Side */}
-          <div className="text-right">
-            <Badge className={`mb-3 text-xl px-6 py-3 shadow-lg ${
-              invoiceNumber?.startsWith('AGR-DRAFT')
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
-                : 'bg-gradient-to-r from-green-600 to-emerald-600 text-white'
-            }`}>
-              {invoiceNumber?.startsWith('AGR-DRAFT') ? 'DRAFT ORDER' : 'GST INVOICE'}
-            </Badge>
-            <div className="text-sm text-gray-800 space-y-2 bg-white/70 p-4 rounded-lg">
-              <p>
-                <strong className="text-gray-900">
-                  {invoiceNumber?.startsWith('AGR-DRAFT') ? 'Order No:' : 'Invoice No:'}
-                </strong>
-                <span className="text-blue-700 font-mono text-base ml-2">{invoiceNumber}</span>
-              </p>
-              <p><strong className="text-gray-900">Date:</strong> <span className="text-gray-700">{invoiceDate}</span></p>
-              <p><strong className="text-gray-900">Due Date:</strong> <span className="text-orange-600 font-medium">{dueDate}</span></p>
-            </div>
-          </div>
+          <Button
+            onClick={onSave}
+            disabled={isSaving || cartItems.length === 0}
+            className={isEditMode ? 'bg-orange-600 hover:bg-orange-700 text-white' : 'bg-green-600 hover:bg-green-700 text-white'}
+          >
+            <FloppyDisk className="w-3 h-3 md:w-4 md:w-4 mr-1 md:mr-2" />
+            {isSaving ? 'Loading...' : isEditMode ? 'Save' : 'Save Invoice'}
+          </Button>
         </div>
       </div>
-
-      {/* Billing and Shipping Address Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Bill To Section */}
-        <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 shadow-md">
-          <CardContent className="p-5">
-            <h3 className="font-bold text-blue-900 mb-4 border-b-2 border-blue-300 pb-2 text-lg">
-              📋 BILL TO:
-            </h3>
-            <div className="text-sm text-gray-800 space-y-2">
-              <p><strong className="text-gray-900 text-base">{customerData.name}</strong></p>
-              <p className="text-blue-700 font-medium">{customerData.businessName}</p>
-              <p className="text-gray-700">{customerData.address1}</p>
-              {customerData.address2 && <p className="text-gray-700">{customerData.address2}</p>}
-              <p className="text-gray-700">{customerData.city}, {customerData.state} - {customerData.pincode}</p>
-              {customerData.gstin && <p><strong className="text-gray-900">GSTIN:</strong> <span className="text-blue-700 font-mono">{customerData.gstin}</span></p>}
-              <p><strong className="text-gray-900">Phone:</strong> <span className="text-gray-700">{customerData.phone}</span></p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Ship To Section */}
-        <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 shadow-md">
-          <CardContent className="p-5">
-            <h3 className="font-bold text-green-900 mb-4 border-b-2 border-green-300 pb-2 text-lg">
-              🚚 SHIP TO:
-            </h3>
-            {shipToData ? (
-              <div className="text-sm text-gray-800 space-y-2">
-                <p><strong className="text-gray-900 text-base">{shipToData.name}</strong></p>
-                <p className="text-green-700 font-medium">{shipToData.businessName}</p>
-                <p className="text-gray-700">{shipToData.address1}</p>
-                {shipToData.address2 && <p className="text-gray-700">{shipToData.address2}</p>}
-                <p className="text-gray-700">{shipToData.city}, {shipToData.state} - {shipToData.pincode}</p>
-              </div>
-            ) : (
-              <div className="text-sm text-gray-600 italic bg-white/50 p-3 rounded-lg">
-                Same as Bill To
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Order Details Section */}
-      {(orderNumber || orderDate || deliveryDate) && (
-        <Card className="border-2 border-purple-300 bg-gradient-to-br from-purple-50 to-indigo-50 shadow-md mb-4">
-          <CardContent className="p-5">
-            <h3 className="font-bold text-purple-900 mb-4 border-b-2 border-purple-300 pb-2 text-lg">
-              📋 ORDER DETAILS:
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              {orderNumber && (
-                <div className="bg-white/70 p-3 rounded-lg">
-                  <p className="text-purple-700 font-semibold">Order No:</p>
-                  <p className="text-gray-800 font-medium">{orderNumber}</p>
-                </div>
-              )}
-              {orderDate && (
-                <div className="bg-white/70 p-3 rounded-lg">
-                  <p className="text-purple-700 font-semibold">Order Date:</p>
-                  <p className="text-gray-800 font-medium">{orderDate}</p>
-                </div>
-              )}
-              {deliveryDate && (
-                <div className="bg-white/70 p-3 rounded-lg">
-                  <p className="text-purple-700 font-semibold">Delivery Required By:</p>
-                  <p className="text-gray-800 font-medium">{deliveryDate}</p>
-                </div>
-              )}
-              <div className="bg-white/70 p-3 rounded-lg">
-                <p className="text-purple-700 font-semibold">Payment Terms:</p>
-                <p className="text-gray-800 font-medium">{paymentTerms}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

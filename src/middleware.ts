@@ -103,10 +103,12 @@ export async function middleware(req: NextRequest) {
   const getDashboardForRole = (role: string | null) => {
     switch (role) {
       case 'SUPER_ADMIN':
+      case 'ADMIN':
       case 'SALES':
       case 'SUPPORT':
-      case 'LOGISTIC':
         return '/admin'
+      case 'LOGISTIC':
+        return '/logistic'
       case 'DISTRIBUTOR':
         return '/distributor'
       case 'RETAILER':
@@ -119,7 +121,7 @@ export async function middleware(req: NextRequest) {
   // Admin route protection
   if (pathname.startsWith('/admin')) {
     if (!user) return NextResponse.redirect(new URL('/login?redirect=/admin', req.url))
-    if (!['SUPER_ADMIN', 'SALES', 'SUPPORT', 'LOGISTIC'].includes(userRole as string)) {
+    if (!['SUPER_ADMIN', 'ADMIN', 'SALES', 'SUPPORT'].includes(userRole as string)) {
       const destination = getDashboardForRole(userRole)
       return NextResponse.redirect(new URL(destination, req.url))
     }

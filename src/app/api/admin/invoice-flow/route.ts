@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
     const statusFilter = searchParams.get('status')
     const searchTerm = searchParams.get('search')
 
+    const MAX_SEARCH_LENGTH = 100
+
     // Build optimized query - select only needed fields for performance
     // Use limited fields instead of * to reduce data transfer
     // Note: paid_amount and balance_due are calculated from invoice_payments table, not direct columns
@@ -95,7 +97,11 @@ export async function GET(request: NextRequest) {
 
     // Search filter (by invoice number or customer name)
     if (searchTerm) {
-      query = query.or(`invoice_number.ilike.%${searchTerm}%,customer_profile.user_name.ilike.%${searchTerm}%,customer_profile.business_name.ilike.%${searchTerm}%`)
+      const sanitizedSearch = searchTerm
+        .trim()
+        .slice(0, MAX_SEARCH_LENGTH)
+        .replace(/[%_\\]/g, (match) => `\\${match}`)
+      query = query.or(`invoice_number.ilike.%${sanitizedSearch}%,customer_profile.user_name.ilike.%${sanitizedSearch}%,customer_profile.business_name.ilike.%${sanitizedSearch}%`)
     }
 
     const { data: invoices, error: fetchError } = await query

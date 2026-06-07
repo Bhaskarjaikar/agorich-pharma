@@ -80,6 +80,17 @@ export interface Invoice {
   igst_amount?: number | null
   is_cancelled?: boolean
   cancelled_at?: string | null
+  distributor_data?: {
+    business_name?: string | null
+    address?: string | null
+    city?: string | null
+    state?: string | null
+    pincode?: string | null
+    gst_number?: string | null
+    phone?: string | null
+    drug_license_20b?: string | null
+    drug_license_21b?: string | null
+  } | null
   invoice_items: Array<{
     id: string
     product_name: string
@@ -212,55 +223,56 @@ export default function InvoicesPage() {
     }
   }, [])
 
+  // Load invoices from both Supabase and localStorage - reusable function
+  const loadInvoices = async () => {
+    try {
+      let allInvoices: Invoice[] = []
+      
+      // 🆕 Try to load from Supabase first
+      try {
+        const response = await fetch('/api/invoices')
+        
+        // Check if response is JSON before parsing
+        const contentType = response.headers.get('content-type')
+        if (response.ok && contentType?.includes('application/json')) {
+          const data = await response.json()
+          if (data.invoices && data.invoices.length > 0) {
+            console.log('✅ Loaded invoices from Supabase:', data.invoices.length)
+            allInvoices = data.invoices
+          }
+        } else {
+          console.log('⚠️ API returned non-JSON response, using localStorage')
+        }
+      } catch (dbError) {
+        console.log('⚠️ Supabase load failed, using localStorage:', dbError)
+      }
+      
+      // If no Supabase invoices, try localStorage
+      if (allInvoices.length === 0) {
+        const savedInvoices = JSON.parse(localStorage.getItem('invoices') || '[]')
+        if (savedInvoices.length > 0) {
+          console.log('📱 Loaded invoices from localStorage:', savedInvoices.length)
+          allInvoices = savedInvoices
+        }
+      }
+      
+      // If still no invoices, keep empty (no demo/sample fallback)
+      if (allInvoices.length === 0) {
+        console.log('ℹ️ No invoices found. Showing empty state.')
+        allInvoices = []
+      }
+      
+      setInvoices(allInvoices)
+    } catch (error) {
+      console.error('❌ Error loading invoices:', error)
+      setInvoices([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Load invoices from both Supabase and localStorage
   useEffect(() => {
-    const loadInvoices = async () => {
-      try {
-        let allInvoices: Invoice[] = []
-        
-        // 🆕 Try to load from Supabase first
-        try {
-          const response = await fetch('/api/invoices')
-          
-          // Check if response is JSON before parsing
-          const contentType = response.headers.get('content-type')
-          if (response.ok && contentType?.includes('application/json')) {
-            const data = await response.json()
-            if (data.invoices && data.invoices.length > 0) {
-              console.log('✅ Loaded invoices from Supabase:', data.invoices.length)
-              allInvoices = data.invoices
-            }
-          } else {
-            console.log('⚠️ API returned non-JSON response, using localStorage')
-          }
-        } catch (dbError) {
-          console.log('⚠️ Supabase load failed, using localStorage:', dbError)
-        }
-        
-        // If no Supabase invoices, try localStorage
-        if (allInvoices.length === 0) {
-          const savedInvoices = JSON.parse(localStorage.getItem('invoices') || '[]')
-          if (savedInvoices.length > 0) {
-            console.log('📱 Loaded invoices from localStorage:', savedInvoices.length)
-            allInvoices = savedInvoices
-          }
-        }
-        
-        // If still no invoices, keep empty (no demo/sample fallback)
-        if (allInvoices.length === 0) {
-          console.log('ℹ️ No invoices found. Showing empty state.')
-          allInvoices = []
-        }
-        
-        setInvoices(allInvoices)
-      } catch (error) {
-        console.error('❌ Error loading invoices:', error)
-        setInvoices([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadInvoices()
     
     // Also listen for page visibility changes to refresh invoices
@@ -302,7 +314,7 @@ export default function InvoicesPage() {
   }, [upiPaymentInitiated])
 
   // Validate stock before sending invoice
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const validateStockBeforeSend = async (invoiceId: string, newStatus: Invoice['status']) => {
     setIsCheckingStock(true)
     try {
@@ -668,6 +680,24 @@ export default function InvoicesPage() {
     const customerGst = invoiceCustomer?.gst_number || profile?.gst_number || null
     const customerDl = invoiceCustomer?.drug_license || profile?.drug_license || null
 
+    // Get distributor info from invoice (stored when invoice was created)
+    const invoiceDistributor = invoice.distributor_data
+    const distributorName = invoiceDistributor?.business_name || 'Distributor'
+    const distributorAddress = invoiceDistributor?.address || 'Address'
+    const distributorLocation = (() => {
+      const city = invoiceDistributor?.city
+      const state = invoiceDistributor?.state
+      const pincode = invoiceDistributor?.pincode
+      if (city || state || pincode) {
+        const parts = [city, state].filter(Boolean).join(', ')
+        return `${parts}${pincode ? ` - ${pincode}` : ''}`
+      }
+      return ''
+    })()
+    const distributorGst = invoiceDistributor?.gst_number || null
+    const distributorPhone = invoiceDistributor?.phone ? `+91 ${invoiceDistributor.phone}` : null
+    const distributorDl = [invoiceDistributor?.drug_license_20b, invoiceDistributor?.drug_license_21b].filter(Boolean).join(', ') || null
+
     // Create HTML content for PDF - using dynamic data from invoice
     const htmlContent = `
       <!DOCTYPE html>
@@ -810,16 +840,14 @@ export default function InvoicesPage() {
         <div class="invoice-container">
           <!-- Invoice Header with Company, Invoice Details, and Party -->
           <div class="invoice-header">
-            <!-- Left - Company Details (Dynamic) -->
+            <!-- Left - Company Details (Distributor Info) -->
             <div class="company-details">
-              <h3>AGORICH PHARMA</h3>
-              <p>At + Vill + PO + PS: Baruraj Thana Chowk</p>
-              <p>Block: Motipur, Muzaffarpur</p>
-              <p>MUZAFFARPUR, BIHAR - 843111</p>
-              <p>GSTIN: 04AAKCD0849F1ZU</p>
-              <p>DL.No: WLF20B2026BR00059, WLF21B2026BR00058</p>
-              <p>Phone: +91 8409725206</p>
-              <p>Email: bhaskarjaikar.1@gmail.com</p>
+              <h3>${distributorName}</h3>
+              ${distributorAddress ? `<p>${distributorAddress}</p>` : ''}
+              ${distributorLocation ? `<p>${distributorLocation}</p>` : ''}
+              ${distributorGst ? `<p>GSTIN: ${distributorGst}</p>` : ''}
+              ${distributorPhone ? `<p>Phone: ${distributorPhone}</p>` : ''}
+              ${distributorDl ? `<p>DL.No: ${distributorDl}</p>` : ''}
             </div>
             
             <!-- Center - Invoice Details (Dynamic) -->
@@ -981,26 +1009,30 @@ export default function InvoicesPage() {
 
   // Handle delete invoice with confirmation - Delete from both localStorage and Supabase
   const handleDeleteInvoice = async (invoice: Invoice) => {
+    // CRITICAL: Only allow deleting DRAFT invoices
+    if (invoice.status !== 'DRAFT') {
+      alert(`❌ Only DRAFT invoices can be deleted. This invoice is "${invoice.status}".`)
+      return
+    }
+
     const confirmMessage = `Are you sure you want to delete invoice ${invoice.invoice_number}?\n\nThis action cannot be undone and will permanently remove the invoice from your records.`
     
     if (window.confirm(confirmMessage)) {
       try {
-        // Try to delete from Supabase API first
-        try {
-          const response = await fetch(`/api/invoices/${invoice.id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
-          })
-          
-          if (!response.ok) {
-            console.warn('Supabase delete failed, continuing with localStorage delete')
-          }
-        } catch (error) {
-          console.warn('Error deleting from Supabase:', error)
-          // Continue with localStorage delete even if Supabase fails
-        }
+        // Delete from Supabase API first - CRITICAL: Only remove from UI if API succeeds
+        const response = await fetch(`/api/invoices/${invoice.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        })
         
-        // Delete from localStorage
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('❌ Failed to delete invoice from Supabase:', errorData)
+          alert(`❌ Failed to delete invoice: ${errorData.error || 'Please try again.'}`)
+          return // Do NOT remove from localStorage or state if API fails
+        }
+
+        // API succeeded - now remove from localStorage and state
         const existingInvoices: Invoice[] = JSON.parse(localStorage.getItem('invoices') || '[]')
         const updatedInvoices = existingInvoices.filter((inv: Invoice) => inv.id !== invoice.id)
         localStorage.setItem('invoices', JSON.stringify(updatedInvoices))
@@ -1019,8 +1051,11 @@ export default function InvoicesPage() {
         }
         
         alert(`✅ Invoice ${invoice.invoice_number} has been deleted successfully.`)
+        
+        // Refresh invoices from API to ensure we have the latest state
+        await loadInvoices()
       } catch (error) {
-        console.error('Error deleting invoice:', error)
+        console.error('❌ Error deleting invoice:', error)
         alert('❌ Failed to delete invoice. Please try again.')
       }
     }
@@ -1280,7 +1315,7 @@ export default function InvoicesPage() {
                 {/* Prominent UPI Payment Button */}
                 <Button
                   onClick={() => handleUpiPayment(selectedInvoiceForPayment)}
-                  className={`w-full mb-4 font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${darkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
+                  className={`w-full mb-4 font-semibold py-6 text-lg shadow-lg hover:shadow-xl transition-all duration-300 ${darkMode ? 'bg-background hover:bg-card text-white' : 'bg-card hover:bg-slate-600 text-white'}`}
                 >
                   <CreditCard className="mr-2 h-6 w-6" />
                   Pay ₹{selectedInvoiceForPayment.grand_total.toFixed(2)} with UPI
@@ -1571,6 +1606,7 @@ export default function InvoicesPage() {
 
                 onPayment={openPaymentModal}
                 getStatusColor={getStatusColor}
+                darkMode={darkMode}
               />
             )}
             {currentView === 'table' && (

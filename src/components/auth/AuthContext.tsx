@@ -3,9 +3,11 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase-client'
+import { isNativeApp } from '@/lib/capacitor'
 import { useRouter } from 'next/navigation'
 import { useLastUsedAccount, LastUsedAccount } from '@/hooks/useLastUsedAccount'
 import { Profile } from '@/lib/supabase-client'
+import { Browser } from '@capacitor/browser'
 
 const SUPER_ADMIN_ID = '723421ed-f226-41f0-bb09-3feb55e3e293'
 
@@ -23,7 +25,7 @@ export interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  signInWithGoogle: () => Promise<void>
+  signInWithGoogle: (redirectTo?: string) => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   lastUsedAccount: LastUsedAccount | null
@@ -76,7 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAllAccounts,
   } = useLastUsedAccount()
 
-  const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+  const loadProfile = useCallback(async (userId: string, retryCount = 0): Promise<Profile | null> => {
+    const MAX_RETRIES = 3
+    const RETRY_DELAY_MS = 1000
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -89,6 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null)
           return null
         }
+
+        if (retryCount < MAX_RETRIES) {
+          console.warn(`Profile load failed, retrying (${retryCount + 1}/${MAX_RETRIES})...`)
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * (retryCount + 1)))
+          return loadProfile(userId, retryCount + 1)
+        }
+
         console.error('Error loading profile:', error)
         setProfile(null)
         return null
@@ -97,6 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile(data)
       return data
     } catch (err) {
+      if (retryCount < MAX_RETRIES) {
+        console.warn(`Profile load exception, retrying (${retryCount + 1}/${MAX_RETRIES})...`)
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS * (retryCount + 1)))
+        return loadProfile(userId, retryCount + 1)
+      }
+
       const error = err as SupabaseErrorLike
       if (!isNotFoundError(error)) {
         console.error('Error in loadProfile:', error)
@@ -128,28 +146,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (redirectTo?: string) => {
     try {
       const getCallbackUrl = () => {
         if (typeof window === 'undefined') return '/auth/callback'
+        const search = new URLSearchParams(window.location.search)
+        if (isNativeApp() || search.get('native') === 'true') return 'agorich://auth/callback'
         const loc = window.location
         const hostname = loc.hostname === '0.0.0.0' ? 'localhost' : loc.hostname
         const port = loc.port ? `:${loc.port}` : ''
         return `${loc.protocol}//${hostname}${port}/auth/callback`
       }
 
-      const { error } = await supabase.auth.signInWithOAuth({
+      const callback = redirectTo ?? getCallbackUrl()
+      const native = typeof window !== 'undefined' && isNativeApp()
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getCallbackUrl(),
+          redirectTo: callback,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           },
+          ...(native ? { skipBrowserRedirect: true } : {}),
         },
       })
 
       if (error) throw error
+
+      if (native) {
+        const url = data?.url
+        if (!url) throw new Error('Missing OAuth URL')
+        await Browser.open({ url })
+      }
     } catch (err) {
       console.error('Error signing in with Google:', err)
       throw err
@@ -207,9 +237,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true
     let subscription: { unsubscribe: () => void } | null = null
 
+    const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+      return await Promise.race([
+        promise,
+        new Promise<T>((_, reject) => {
+          setTimeout(() => reject(new Error('AUTH_TIMEOUT')), ms)
+        }),
+      ])
+    }
+
     const initializeAuth = async () => {
       try {
-        const { data: { session: initialSession }, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session: initialSession }, error: sessionError } = await withTimeout(supabase.auth.getSession(), 4000)
 
         if (!mounted) return
 
@@ -262,6 +301,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }).data.subscription
 
       } catch (err) {
+        if ((err as Error | undefined)?.message === 'AUTH_TIMEOUT') {
+          try {
+            await supabase.auth.signOut({ scope: 'local' })
+          } catch {}
+          if (mounted) {
+            setUser(null)
+            setSession(null)
+            setProfile(null)
+            setLoading(false)
+            setInitialized(true)
+          }
+          router.replace('/login?error=session_failed')
+          return
+        }
+
         console.error('Error initializing auth:', err)
         if (mounted) {
           setLoading(false)

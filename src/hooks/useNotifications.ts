@@ -53,7 +53,7 @@ export function useNotifications() {
     }
 
     try {
-      await fetch('/api/notifications', {
+      const response = await fetch('/api/notifications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,6 +65,11 @@ export function useNotifications() {
         }),
       })
 
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to mark as read`)
+      }
+
       setNotifications(prev =>
         prev.map(n =>
           n.id === notificationId ? { ...n, is_read: true } : n
@@ -73,14 +78,23 @@ export function useNotifications() {
       setUnreadCount(prev => Math.max(0, prev - 1))
     } catch (error) {
       console.error('Failed to mark as read:', error)
+      throw error
     }
   }, [user, session])
 
   const markAllAsRead = useCallback(async () => {
-    for (const notification of notifications) {
-      if (!notification.is_read) {
-        await markAsRead(notification.id)
-      }
+    const unreadNotifications = notifications.filter(n => !n.is_read)
+    const results = await Promise.allSettled(
+      unreadNotifications.map(n => markAsRead(n.id))
+    )
+    
+    const failedNotifications = results
+      .filter((result, index): result is PromiseRejectedResult => result.status === 'rejected')
+      .map((_, index) => unreadNotifications[index])
+    
+    if (failedNotifications.length > 0) {
+      console.error('Failed to mark some notifications as read:', failedNotifications)
+      throw new Error(`Failed to mark ${failedNotifications.length} notification(s) as read`)
     }
   }, [notifications, markAsRead])
 

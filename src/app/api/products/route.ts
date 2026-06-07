@@ -3,6 +3,40 @@ import { createServerClient } from '@/lib/supabase/server'
 import { verifyAuth } from '@/lib/api-security'
 import { createClient } from '@supabase/supabase-js'
 
+const sanitizeString = (str: string | null | undefined, maxLength: number = 500): string => {
+  if (!str) return ''
+  return String(str).trim().slice(0, maxLength)
+}
+
+const sanitizeNumeric = (value: unknown, fallback: number = 0, decimals: number = 2): number => {
+  if (value === null || value === undefined) return fallback
+  const num = Number(value)
+  if (Number.isNaN(num) || !Number.isFinite(num)) return fallback
+  return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals)
+}
+
+const sanitizeProductData = (product: Record<string, unknown>) => {
+  return {
+    id: sanitizeString(product.id as string),
+    name: sanitizeString(product.name as string, 500),
+    category: sanitizeString(product.category as string, 100),
+    manufacturer: sanitizeString(product.manufacturer as string, 300),
+    mrp: sanitizeNumeric(product.mrp, 0),
+    stock: Math.floor(sanitizeNumeric(product.stock, 0, 0)),
+    pack_size: sanitizeString(product.pack_size as string, 50),
+    expiry_date: sanitizeString(product.expiry_date as string, 20),
+    batch_number: sanitizeString(product.batch_number as string, 50),
+    mfg_date: sanitizeString(product.mfg_date as string, 20),
+    agorich_price: sanitizeNumeric(product.agorich_price, 0),
+    distributor_price: sanitizeNumeric(product.distributor_price, 0),
+    retailer_price: sanitizeNumeric(product.retailer_price, 0),
+    margin: sanitizeNumeric(product.margin, 0),
+    status: product.status === 'ACTIVE' || product.status === 'INACTIVE' ? product.status : 'ACTIVE',
+    created_at: sanitizeString(product.created_at as string, 30),
+    updated_at: sanitizeString(product.updated_at as string, 30),
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -19,8 +53,14 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get('q')
     const category = searchParams.get('category')
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    const limitStr = searchParams.get('limit')
+    const offsetStr = searchParams.get('offset')
+
+    const limit = Math.min(Math.max(parseInt(limitStr || '100', 10) || 100, 1), 500)
+    const offset = Math.max(parseInt(offsetStr || '0', 10) || 0, 0)
+
+    const MAX_SEARCH_LENGTH = 100
+    const MIN_SEARCH_LENGTH = 2
 
     let query = supabase
       .from('products')
@@ -29,14 +69,19 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    // Apply search filter
     if (search) {
-      query = query.or(`name.ilike.%${search}%,manufacturer.ilike.%${search}%,category.ilike.%${search}%`)
+      const sanitizedSearch = search
+        .trim()
+        .slice(0, MAX_SEARCH_LENGTH)
+        .replace(/[%_\\]/g, (match) => `\\${match}`)
+
+      if (sanitizedSearch.length >= MIN_SEARCH_LENGTH) {
+        query = query.or(`name.ilike.%${sanitizedSearch}%,manufacturer.ilike.%${sanitizedSearch}%,category.ilike.%${sanitizedSearch}%`)
+      }
     }
 
-    // Apply category filter
     if (category) {
-      query = query.eq('category', category)
+      query = query.eq('category', sanitizeString(category, 100))
     }
 
     const { data: products, error } = await query
@@ -51,13 +96,17 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
-    
+
+    const sanitizedProducts = Array.isArray(products)
+      ? products.map(p => sanitizeProductData(p as Record<string, unknown>))
+      : []
+
     return NextResponse.json({
       success: true,
-      products: products || [],
+      products: sanitizedProducts,
       pageInfo: {
-        hasNextPage: (products?.length || 0) >= limit,
-        endCursor: offset + (products?.length || 0),
+        hasNextPage: sanitizedProducts.length >= limit,
+        endCursor: offset + sanitizedProducts.length,
       },
     }, {
       headers: {
@@ -66,8 +115,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: unknown) {
     console.error('Error fetching products:', error)
-    const message =
-      error instanceof Error ? error.message : 'Failed to fetch products'
+    const message = error instanceof Error ? error.message : 'Failed to fetch products'
     return NextResponse.json(
       {
         success: false,

@@ -108,35 +108,35 @@ export default function CheckoutPage() {
       </div>
 
       {/* Header */}
-      <header className="border-b border-white/10 bg-white/5 backdrop-blur-xl sticky top-0 z-50">
+      <header className="border-b border-border bg-card/95 backdrop-blur-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/retailer/create-invoice" className="flex items-center text-white hover:text-blue-200">
+              <Link href="/retailer/create-invoice" className="flex items-center text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="w-5 h-5 mr-2" />
                 Back to Invoice
               </Link>
-              <div className="w-px h-6 bg-white/20" />
+              <div className="w-px h-6 bg-border" />
               <div className="flex items-center space-x-3">
                 <div className="relative w-12 h-12">
                   <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 via-blue-500 to-purple-500 animate-spin" style={{animationDuration: '3s'}}></div>
                   <div className="absolute inset-1 bg-white rounded-full flex items-center justify-center">
                     <Image 
-                      src="/agorich-logo.png" 
-                      alt="Agorich Logo" 
-                      width={40} 
+                      src="/agorich-logo.png"
+                      alt="Agorich Logo"
+                      width={40}
                       height={40}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-white">Checkout</h1>
-                  <p className="text-sm text-white/70">Complete your pharmaceutical order</p>
+                  <h1 className="text-xl font-semibold text-foreground">Checkout</h1>
+                  <p className="text-sm text-muted-foreground">Complete your pharmaceutical order</p>
                 </div>
               </div>
             </div>
-            <Badge className="bg-green-500/20 text-green-100 border-green-400/30">
+            <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-400/30">
               <CheckCircle className="w-4 h-4 mr-1" />
               Secure Checkout
             </Badge>
@@ -147,26 +147,26 @@ export default function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Steps */}
         <div className="mb-8">
-          <Card className="bg-white/10 backdrop-blur-sm border-white/20 shadow-xl">
+          <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
             <CardContent className="p-6">
               <div className="flex justify-between items-center">
                 {steps.map((step, index) => (
                   <div key={step.id} className="flex flex-col items-center">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
                       currentStep >= step.id 
-                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' 
-                        : 'bg-white/20 text-white/60 border border-white/30'
+                        ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
+                        : 'bg-muted text-muted-foreground border border-border'
                     }`}>
                       <step.icon className="w-6 h-6" />
                     </div>
                     <span className={`text-sm font-medium ${
-                      currentStep >= step.id ? 'text-white' : 'text-white/70'
+                      currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'
                     }`}>
                       {step.title}
                     </span>
                     {index < steps.length - 1 && (
                       <div className={`absolute top-6 left-1/2 w-full h-0.5 ${
-                        currentStep > step.id ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-white/20'
+                        currentStep > step.id ? 'bg-gradient-to-r from-blue-500 to-cyan-500' : 'bg-muted'
                       }`} style={{width: 'calc(100% - 3rem)', marginLeft: '1.5rem'}}></div>
                     )}
                   </div>
@@ -185,52 +185,52 @@ export default function CheckoutPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-6"
               >
-                <Card className="bg-gradient-to-br from-blue-500 to-cyan-500 border-0 shadow-xl">
+                <Card className="bg-card border-border shadow-xl">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-white">
-                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                        <MapPin className="w-4 h-4 text-white" />
+                    <CardTitle className="flex items-center text-foreground">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
+                        <MapPin className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       </div>
                       Delivery Information
                     </CardTitle>
-                    <CardDescription className="text-blue-100">
+                    <CardDescription className="text-muted-foreground">
                       Where should we deliver your pharmaceutical order?
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-white mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Delivery Address
                       </label>
                       <Textarea
                         value={formData.deliveryAddress}
                         onChange={(e) => setFormData({...formData, deliveryAddress: e.target.value})}
-                        className="min-h-[100px] bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        className="min-h-[100px] bg-background border-input text-foreground placeholder:text-muted-foreground"
                         placeholder="Enter complete delivery address"
                       />
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-white mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Contact Phone
                         </label>
                         <Input
                           value={formData.contactPhone}
                           onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
-                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                          className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                           placeholder="+91 8409725206"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-white mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Preferred Delivery Date
                         </label>
                         <Input
                           type="date"
                           value={formData.deliveryDate}
                           onChange={(e) => setFormData({...formData, deliveryDate: e.target.value})}
-                          className="bg-white/10 border-white/20 text-white"
+                          className="bg-background border-input text-foreground"
                         />
                       </div>
                     </div>
@@ -238,7 +238,7 @@ export default function CheckoutPage() {
                 </Card>
 
                 <div className="flex justify-end">
-                  <Button 
+                  <Button
                     onClick={() => setCurrentStep(2)}
                     className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   >
@@ -254,91 +254,91 @@ export default function CheckoutPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-6"
               >
-                <Card className="bg-gradient-to-br from-green-500 to-emerald-500 border-0 shadow-xl">
+                <Card className="bg-card border-border shadow-xl">
                   <CardHeader>
-                    <CardTitle className="flex items-center text-white">
-                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                        <CreditCard className="w-4 h-4 text-white" />
+                    <CardTitle className="flex items-center text-foreground">
+                      <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+                        <CreditCard className="w-4 h-4 text-green-600 dark:text-green-400" />
                       </div>
                       Payment Method
                     </CardTitle>
-                    <CardDescription className="text-green-100">
+                    <CardDescription className="text-muted-foreground">
                       Choose your preferred payment option
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
-                      <div 
+                      <div
                         className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                          formData.paymentMethod === 'credit_period' 
-                            ? 'border-white bg-white/20' 
-                            : 'border-white/30 hover:border-white/50 bg-white/10'
+                          formData.paymentMethod === 'credit_period'
+                            ? 'border-green-500 bg-green-500/10'
+                            : 'border-border hover:border-green-500/50 bg-muted/50'
                         }`}
                         onClick={() => setFormData({...formData, paymentMethod: 'credit_period'})}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <Clock className="w-5 h-5 text-white" />
+                            <Clock className="w-5 h-5 text-green-600 dark:text-green-400" />
                             <div>
-                              <h3 className="font-semibold text-white">7-Day Credit Period</h3>
-                              <p className="text-sm text-green-100">Pay within 7 days of delivery</p>
+                              <h3 className="font-semibold text-foreground">7-Day Credit Period</h3>
+                              <p className="text-sm text-muted-foreground">Pay within 7 days of delivery</p>
                             </div>
                           </div>
-                          <Badge className="bg-white/20 text-white border-white/30">Recommended</Badge>
+                          <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30">Recommended</Badge>
                         </div>
                       </div>
 
-                      <div 
+                      <div
                         className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                          formData.paymentMethod === 'cod' 
-                            ? 'border-white bg-white/20' 
-                            : 'border-white/30 hover:border-white/50 bg-white/10'
+                          formData.paymentMethod === 'cod'
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : 'border-border hover:border-blue-500/50 bg-muted/50'
                         }`}
                         onClick={() => setFormData({...formData, paymentMethod: 'cod'})}
                       >
                         <div className="flex items-center space-x-3">
-                          <Truck className="w-5 h-5 text-white" />
+                          <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                           <div>
-                            <h3 className="font-semibold text-white">Cash on Delivery</h3>
-                            <p className="text-sm text-green-100">Pay when you receive the order</p>
+                            <h3 className="font-semibold text-foreground">Cash on Delivery</h3>
+                            <p className="text-sm text-muted-foreground">Pay when you receive the order</p>
                           </div>
                         </div>
                       </div>
 
-                      <div 
+                      <div
                         className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
-                          formData.paymentMethod === 'online' 
-                            ? 'border-white bg-white/20' 
-                            : 'border-white/30 hover:border-white/50 bg-white/10'
+                          formData.paymentMethod === 'online'
+                            ? 'border-purple-500 bg-purple-500/10'
+                            : 'border-border hover:border-purple-500/50 bg-muted/50'
                         }`}
                         onClick={() => setFormData({...formData, paymentMethod: 'online'})}
                       >
                         <div className="flex items-center space-x-3">
-                          <CreditCard className="w-5 h-5 text-white" />
+                          <CreditCard className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                           <div>
-                            <h3 className="font-semibold text-white">Online Payment</h3>
-                            <p className="text-sm text-green-100">Pay now with UPI/Card/Net Banking</p>
+                            <h3 className="font-semibold text-foreground">Online Payment</h3>
+                            <p className="text-sm text-muted-foreground">Pay now with UPI/Card/Net Banking</p>
                           </div>
                         </div>
                       </div>
                     </div>
                     {formData.paymentMethod === 'cod' && (
-                      <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <p className="text-sm text-yellow-800">COD ke liye kripya delivery par cash ready rakhein. High-value orders par advance ki maang ho sakti hai.</p>
+                      <div className="mt-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-400">COD ke liye kripya delivery par cash ready rakhein. High-value orders par advance ki maang ho sakti hai.</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
 
                 <div className="flex justify-between">
-                  <Button 
+                  <Button
                     variant="outline"
                     onClick={() => setCurrentStep(1)}
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="border-input text-foreground hover:bg-muted"
                   >
                     Back to Delivery
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => setCurrentStep(3)}
                     className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   >
@@ -354,29 +354,29 @@ export default function CheckoutPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="space-y-6"
               >
-                <Card className="border-0 shadow-lg">
+                <Card className="bg-card border-border shadow-lg">
                   <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <CheckCircle className="w-5 h-5 mr-2 text-green-600" />
+                    <CardTitle className="flex items-center text-foreground">
+                      <CheckCircle className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" />
                       Review Your Order
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-muted-foreground">
                       Please review all details before placing your order
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Order Items */}
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-4">Order Items</h3>
+                      <h3 className="font-semibold text-foreground mb-4">Order Items</h3>
                       <div className="space-y-3">
                         {orderItems.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                             <div>
-                              <h4 className="font-medium text-gray-900">{item.name}</h4>
-                              <p className="text-sm text-gray-600">{item.manufacturer}</p>
+                              <h4 className="font-medium text-foreground">{item.name}</h4>
+                              <p className="text-sm text-muted-foreground">{item.manufacturer}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-medium">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
+                              <p className="font-medium text-foreground">{item.quantity} × {formatCurrency(item.unitPrice)}</p>
                               <p className="text-sm text-green-600">+{formatCurrency(item.margin * item.quantity)} profit</p>
                             </div>
                           </div>
@@ -386,20 +386,20 @@ export default function CheckoutPage() {
 
                     {/* Delivery Details */}
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-4">Delivery Details</h3>
-                      <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+                      <h3 className="font-semibold text-foreground mb-4">Delivery Details</h3>
+                      <div className="p-4 bg-muted rounded-lg space-y-2">
                         <div className="flex items-center">
-                          <MapPin className="w-4 h-4 text-gray-500 mr-2" />
-                          <span className="text-sm text-gray-700">{formData.deliveryAddress}</span>
+                          <MapPin className="w-4 h-4 text-muted-foreground mr-2" />
+                          <span className="text-sm text-foreground">{formData.deliveryAddress}</span>
                         </div>
                         <div className="flex items-center">
-                          <Phone className="w-4 h-4 text-gray-500 mr-2" />
-                          <span className="text-sm text-gray-700">{formData.contactPhone}</span>
+                          <Phone className="w-4 h-4 text-muted-foreground mr-2" />
+                          <span className="text-sm text-foreground">{formData.contactPhone}</span>
                         </div>
                         {formData.deliveryDate && (
                           <div className="flex items-center">
-                            <Calendar className="w-4 h-4 text-gray-500 mr-2" />
-                            <span className="text-sm text-gray-700">
+                            <Calendar className="w-4 h-4 text-muted-foreground mr-2" />
+                            <span className="text-sm text-foreground">
                               {new Date(formData.deliveryDate).toLocaleDateString()}
                             </span>
                           </div>
@@ -410,9 +410,9 @@ export default function CheckoutPage() {
                     {/* Order Notes */}
                     {formData.orderNotes && (
                       <div>
-                        <h3 className="font-semibold text-gray-900 mb-2">Order Notes</h3>
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm text-gray-700">{formData.orderNotes}</p>
+                        <h3 className="font-semibold text-foreground mb-2">Order Notes</h3>
+                        <div className="p-3 bg-muted rounded-lg">
+                          <p className="text-sm text-foreground">{formData.orderNotes}</p>
                         </div>
                       </div>
                     )}
@@ -452,62 +452,62 @@ export default function CheckoutPage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="bg-gradient-to-br from-blue-500 to-cyan-500 border-0 shadow-xl sticky top-8">
+              <Card className="bg-card border-border shadow-xl sticky top-8">
                 <CardHeader>
-                  <CardTitle className="flex items-center text-white">
-                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center mr-3">
-                      <FileText className="w-4 h-4 text-white" />
+                  <CardTitle className="flex items-center text-foreground">
+                    <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center mr-3">
+                      <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     </div>
                     Order Summary
                   </CardTitle>
                 </CardHeader>
-                
+
                 <CardContent className="space-y-4">
                   {/* Price Breakdown */}
                   <div className="space-y-3">
                     <div className="flex justify-between">
-                      <span className="text-blue-100">Subtotal</span>
-                      <span className="font-medium text-white">{formatCurrency(subtotal)}</span>
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-medium text-foreground">{formatCurrency(subtotal)}</span>
                     </div>
-                    
+
                     <div className="flex justify-between">
-                      <span className="text-blue-100">GST (18%)</span>
-                      <span className="font-medium text-white">{formatCurrency(gstAmount)}</span>
+                      <span className="text-muted-foreground">GST (18%)</span>
+                      <span className="font-medium text-foreground">{formatCurrency(gstAmount)}</span>
                     </div>
-                    
-                    <div className="border-t border-white/20 pt-3">
+
+                    <div className="border-t border-border pt-3">
                       <div className="flex justify-between text-lg font-bold">
-                        <span className="text-white">Total Amount</span>
-                        <span className="text-white">{formatCurrency(totalAmount)}</span>
+                        <span className="text-foreground">Total Amount</span>
+                        <span className="text-foreground">{formatCurrency(totalAmount)}</span>
                       </div>
                     </div>
-                    
-                    <div className="bg-white/20 border border-white/30 rounded-lg p-4">
+
+                    <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
                       <div className="flex items-center mb-2">
-                        <CheckCircle className="w-5 h-5 text-white mr-2" />
-                        <span className="font-semibold text-white">Your Total Profit</span>
+                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mr-2" />
+                        <span className="font-semibold text-foreground">Your Total Profit</span>
                       </div>
-                      <div className="text-2xl font-bold text-white">
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {formatCurrency(totalMargin)}
                       </div>
-                      <div className="text-sm text-blue-100">
+                      <div className="text-sm text-muted-foreground">
                         {((totalMargin / subtotal) * 100).toFixed(1)}% margin
                       </div>
                     </div>
                   </div>
 
                   {/* Trust Indicators */}
-                  <div className="space-y-3 pt-4 border-t border-white/20">
-                    <div className="flex items-center text-sm text-blue-100">
-                      <Shield className="w-4 h-4 mr-2 text-white" />
+                  <div className="space-y-3 pt-4 border-t border-border">
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Shield className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" />
                       <span>100% Invoice Guarantee</span>
                     </div>
-                    <div className="flex items-center text-sm text-blue-100">
-                      <Truck className="w-4 h-4 mr-2 text-white" />
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Truck className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
                       <span>Free Doorstep Delivery</span>
                     </div>
-                    <div className="flex items-center text-sm text-blue-100">
-                      <Clock className="w-4 h-4 mr-2 text-white" />
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Clock className="w-4 h-4 mr-2 text-purple-600 dark:text-purple-400" />
                       <span>7-Day Payment Grace</span>
                     </div>
                   </div>

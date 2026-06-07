@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 import { verifyRetailerOrAdmin } from '@/lib/api-security'
+import {
+  writePaymentToCanonicalLedger,
+  normalizePaymentStatus,
+  normalizePaymentType
+} from '@/lib/payment-ledger/ledger'
 
 interface InvoicePaymentAggRow {
   amount: number | string | null
@@ -53,7 +58,7 @@ export async function POST(
     // Ensure invoice exists
     const { data: inv, error: invErr } = await supabase
       .from('invoices')
-      .select('id, grand_total, status')
+      .select('id, grand_total, status, order_id')
       .eq('id', invoiceId)
       .single()
     if (invErr || !inv) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
@@ -68,6 +73,32 @@ export async function POST(
       received_by: user!.id,
     })
     if (payErr) return NextResponse.json({ error: payErr.message }, { status: 400 })
+
+    // ============================================
+    // DUAL-WRITE: Write to canonical payment ledger
+    // ============================================
+    const canonicalResult = await writePaymentToCanonicalLedger(supabase, {
+      invoice_id: invoiceId,
+      order_id: inv.order_id || null,
+      amount: Number(amount),
+      payment_method: method,
+      transaction_id: `INVPAY-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+      razorpay_payment_id: null,
+      razorpay_order_id: null,
+      status: normalizePaymentStatus('SUCCESS'),
+      payment_type: normalizePaymentType('PARTIAL', Number(amount), Number(inv.grand_total || 0)),
+      recorded_by: user!.id,
+      metadata: { 
+        source: 'invoices_id_payments_route', 
+        original_table: 'invoice_payments',
+        reference_no: reference_no || null,
+        note: note || null
+      }
+    })
+
+    if (!canonicalResult.success) {
+      console.warn('⚠️ Failed to write to canonical payment ledger (continuing anyway):', canonicalResult.error)
+    }
 
     // Compute totals
     let paidAmount = 0
@@ -104,5 +135,4 @@ export async function POST(
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
 
